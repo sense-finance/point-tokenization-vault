@@ -2,14 +2,17 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {Counter} from "../src/Counter.sol";
+import {PTV} from "../src/PTV.sol";
+
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract CounterTest is Test {
-    Counter public counter;
+    PTV singleton = new PTV();
 
     function setUp() public {
-        counter = new Counter();
-        counter.setNumber(0);
+        PTV ptv = PTV(
+            address(new ERC1967Proxy{salt: bytes32(salt)}(address(singleton), abi.encodeCall(PTV.initialize, (owner))))
+        );
     }
 
     function test_Increment() public {

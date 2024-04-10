@@ -6,18 +6,14 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
-// mint tokens continuously based on emission rate
-// - rate accumulator?
-// - rewards distributor merkle tree type design
-
-// auto sell built in
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 // infra
 // - oracle
 // - defender updater
-
-// vault hub
-// cannonical addresses
 
 // 4626 auto compounder
 
@@ -29,11 +25,7 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 // audits
 // - infra audit (oracle audit)
 
-// existing oracles we could partner with
-// - chainlink
-
 // daily or weekly delay vs instanteous and forward looking
-// backfilling means there's a delay between distrubtion and tokenization, but there's less pressure on us to be up-to-date
 
 // module
 // - swappable multisig for avs
@@ -49,32 +41,39 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 // the scripte will need to generate merkle trees, and put in the exchange rate as soon as TGE occurs
 // put in exchange rate at the end and pause new merkle trees
+// permit?
 
-contract PTV is ERC4626 {
+// future:
+// - allownaces
+
+contract PTV is Ownable, UUPSUpgradeable, Initializable {
     using SafeTransferLib for ERC20;
 
+    error AlreadyClaimed();
+
+    PTVHub public hub;
+    mapping(address => mapping(address => uint256)) public allowance;
+
     mapping(address user => mapping(ERC20 token => uint256 balance)) public balances;
+    mapping(address user => mapping(bytes32 pointsId => uint256 claimed)) public claimed;
+    mapping(bytes32 pointsId => bytes32 root) public currRoot;
+    mapping(bytes32 pointsId => bytes32 root) public prevRoot;
     mapping(bytes32 pointsId => uint256 totalSupply) public totalSupply;
 
     struct Claim {
         address _account;
         bytes32 _pointsId;
         uint256 _claimable;
-        bytes32[] calldata _proof;
+        bytes32[] _proof;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "PTV: Only owner can call this function");
-        _;
+    function initialize(PTVHub _hub) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
+        hub = _hub;
     }
 
-    constructor(address _owner) {
-        owner = _owner;
-    }
-
-    function setOwner(address _owner) external onlyOwner {
-        owner = _owner;
-    }
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function deposit(ERC20 token, uint256 amount, address receiver) public virtual returns (uint256 shares) {
         // Need to transfer before minting or ERC777s could reenter.
@@ -82,41 +81,25 @@ contract PTV is ERC4626 {
 
         balances[receiver][token] += amount;
 
-        // emit deposit
+        // emit deposit event
     }
 
-    function withdraw(ERC20 token, uint256 amount, address receiver, address owner)
-        public
-        virtual
-        returns (uint256 shares)
-    {
-        // if (msg.sender != owner) {
-        //     uint256 allowed = allowance[owner][msg.sender]; // Saves gas for limited approvals.
+    function withdraw(ERC20 token, uint256 amount, address receiver) public virtual returns (uint256 shares) {
+        balances[msg.sender][token] -= amount;
 
-        //     if (allowed != type(uint256).max) allowance[owner][msg.sender] = allowed - shares;
-        // }
-
-        balances[owner][token] -= amount;
-
-        emit Withdraw(msg.sender, receiver, owner, amount);
+        // emit Withdraw(msg.sender, receiver, msg.sender, amount);
 
         token.safeTransfer(receiver, amount);
     }
 
-    /// @notice Updates the current merkle tree's root.
-    /// @param _newRoot The new merkle tree's root.
     function updateRoot(bytes32 _newRoot, bytes32 _pointsId) external onlyOwner {
         prevRoot[_pointsId] = currRoot[_pointsId];
         currRoot[_pointsId] = _newRoot;
-        emit RootUpdated(_newRoot, _pointsId);
+        // emit RootUpdated(_newRoot, _pointsId);
     }
 
     // can we assume this will be pushed in, or should we fetch it from somewhere?
 
-    /// @notice Claims rewards.
-    /// @param _account The address of the claimer.
-    /// @param _claimable The overall claimable amount of token rewards.
-    /// @param _proof The merkle proof that validates this claim.
     function claimPointsTokens(Claim[] calldata claims) external {
         for (uint256 i = 0; i < claims.length; i++) {
             Claim memory claim = claims[i];
@@ -130,8 +113,8 @@ contract PTV is ERC4626 {
         bytes32 candidateRoot =
             MerkleProof.processProof(_proof, keccak256(abi.encodePacked(_account, _pointsId, _claimable)));
 
-        if (candidateRoot[_pointsId] != currRoot[_pointsId] && candidateRoot[_pointsId] != prevRoot[_pointsId]) {
-            revert ProofInvalidOrExpired();
+        if (candidateRoot != currRoot[_pointsId] && candidateRoot != prevRoot[_pointsId]) {
+            // revert ProofInvalidOrExpired();
         }
 
         uint256 alreadyClaimed = claimed[_account][_pointsId];
@@ -144,9 +127,9 @@ contract PTV is ERC4626 {
 
         claimed[_account][_pointsId] = _claimable;
 
-        hub.mint(_account, _pointsId, amount);
+        // hub.mint(_account, _pointsId, amount);
 
-        emit RewardsClaimed(_account, _pointsId, amount);
+        // emit RewardsClaimed(_account, _pointsId, amount);
     }
 
     enum Operation {
@@ -155,12 +138,12 @@ contract PTV is ERC4626 {
     }
 
     // To handle arbitrary claiming logic for the rewards
-    function execute(address to, uint256 value, bytes memory data, Enum.Operation operation, uint256 txGas)
+    function execute(address to, uint256 value, bytes memory data, Operation operation, uint256 txGas)
         external
         onlyOwner
         returns (bool success)
     {
-        if (operation == Enum.Operation.DelegateCall) {
+        if (operation == Operation.DelegateCall) {
             assembly {
                 success := delegatecall(txGas, to, add(data, 0x20), mload(data), 0, 0)
             }
@@ -171,17 +154,22 @@ contract PTV is ERC4626 {
         }
     }
 
-    function claimRewardToken(address _token, address _receiver, uint256 _amount) external onlyOwner {
-        hub.burnAndTransfer(_account, _pointsId, amount);
+    function claimRewardToken(address _reward, address _receiver, uint256 _amount) external onlyOwner {
+        // hub.burnAndTransfer(_account, _pointsId, amount);
 
-        hub.mint(_account, _pointsId, amount);
+        // if is final
+        // burn tokens and distribute rewards
+        // if not final,
 
-        _token.safeTransfer(_receiver, _amount);
+        // hub.mint(_account, _pointsId, amount);
+
+        // _reward.safeTransfer(_receiver, _amount);
     }
 
     // recover?
 }
 
+// todo: make the hub a proxy as well
 contract PTVHub {
     mapping(bytes32 pointsId => ERC20 token) public pointsTokens;
     address public owner;
@@ -196,20 +184,19 @@ contract PTVHub {
     }
 
     function mint(address _account, bytes32 _pointsId, uint256 _amount) external {
-        // auth
+        // auth only trusted
         if (pointsTokens[_pointsId] == address(0)) {
-            pointsTokens[_pointsId] = new ERC20(_pointsId, _pointsId, 18);
+            pointsTokens[_pointsId] = new ERC20(_pointsId, _pointsId, 18); // owns tokens
         }
 
         pointsTokens[_pointsId].mint(_account, _amount);
     }
-    // owns tokens
 
     function grantTokenOwnership(address _newOwner) external onlyOwner {
         pointsTokens[_pointsId].grantTokenOwnership(_newOwner);
     }
 
-    function auth() {
-        // give auth to factories or vaults
-    }
+    // function auth() {
+    // give auth to factories or vaults
+    // }
 }
