@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {Script} from "forge-std/Script.sol";
 
 import {PointTokenVault, PointTokenHub} from "../PointTokenVault.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployPointTokenSystem is Script {
     function run(address admin) public {
@@ -14,10 +15,10 @@ contract DeployPointTokenSystem is Script {
 
         // TODO: use create two for deterministic addresses across chains
 
-        pointTokenHub = PointTokenHub(
+        PointTokenHub pointTokenHub = PointTokenHub(
             address(new ERC1967Proxy(address(PTHubSingleton), abi.encodeCall(PointTokenHub.initialize, ())))
         );
-        pointTokenVault = PointTokenVault(
+        PointTokenVault pointTokenVault = PointTokenVault(
             address(
                 new ERC1967Proxy(address(PTVSingleton), abi.encodeCall(PointTokenVault.initialize, (pointTokenHub)))
             )
@@ -29,5 +30,7 @@ contract DeployPointTokenSystem is Script {
         pointTokenVault.transferOwnership(admin);
 
         vm.stopBroadcast();
+
+        // TODO: return addresses
     }
 }
