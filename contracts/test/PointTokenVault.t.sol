@@ -21,14 +21,15 @@ contract PointTokenVaultTest is Test {
     PointTokenVault pointTokenVault;
 
     MockERC20 token;
+    MockERC20 rewardToken;
 
     address vitalik = makeAddr("vitalik");
     address toly = makeAddr("toly");
+    address illia = makeAddr("illia");
     address admin = makeAddr("admin");
 
     function setUp() public {
         pointTokenHub = PointTokenHub(
-            // create 3 determinsitic address for creating uni pools
             address(new ERC1967Proxy(address(PTHubSingleton), abi.encodeCall(PointTokenHub.initialize, ())))
         );
         pointTokenVault = PointTokenVault(
@@ -44,6 +45,7 @@ contract PointTokenVaultTest is Test {
 
         // Deploy a mock token
         token = new MockERC20("Test Token", "TST", 18);
+        rewardToken = new MockERC20("Reward Token", "RWT", 18);
     }
 
     function test_Sanity() public {
@@ -161,22 +163,19 @@ contract PointTokenVaultTest is Test {
         Echo echo = new Echo();
         CallEcho callEcho = new CallEcho();
 
+        uint256 GAS_LIMIT = 1e9;
+
         // Execute a simple call
         vm.prank(admin);
 
         vm.expectEmit(true, true, true, true);
         emit EchoEvent("Hello", address(pointTokenVault));
         pointTokenVault.execute(
-            address(callEcho), abi.encodeWithSelector(CallEcho.callEcho.selector, echo, "Hello"), 1e9
+            address(callEcho), abi.encodeWithSelector(CallEcho.callEcho.selector, echo, "Hello"), GAS_LIMIT
         );
     }
 
     function test_Distribution() public {
-        // Test distribution
-        // Test distribution with multiple tokens
-        // Test distribution with multiple receivers
-        // Test distribution with multiple tokens and multiple receivers
-
         // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
         bytes32[] memory goodProof = new bytes32[](1);
         goodProof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
@@ -222,13 +221,82 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.claimPointTokens(claims, vitalik);
     }
 
+    function test_DistributionTwoRecipients() public {
+        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
+
+        // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        vm.prank(admin);
+        pointTokenVault.updateRoot(root, pointsId);
+
+        bytes32[] memory vitalikProof = new bytes32[](1);
+        vitalikProof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
+
+        // Vitalik can claim
+        vm.prank(vitalik);
+        claims[0] = PointTokenVault.Claim(pointsId, 1e18, vitalikProof);
+        pointTokenVault.claimPointTokens(claims, vitalik);
+
+        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(vitalik), 1e18);
+
+        bytes32[] memory tolyProof = new bytes32[](1);
+        tolyProof[0] = 0x77ec2184ee10de8d8164b15f7f9e734a985dbe8a49e28feb2793ab17c9ed215c;
+
+        // Illia can execute toly's claim, but can only send the tokens to toly
+        vm.prank(illia);
+        claims[0] = PointTokenVault.Claim(pointsId, 0.5e18, tolyProof);
+        vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
+        pointTokenVault.claimPointTokens(claims, illia);
+
+        pointTokenVault.claimPointTokens(claims, toly);
+
+        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(toly), 0.5e18);
+    }
+
+    function test_SimpleRedemption() public {
+        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(admin);
+        pointTokenVault.updateRoot(root, pointsId);
+
+        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
+        claims[0] = PointTokenVault.Claim(pointsId, 1e18, proof);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPointTokens(claims, vitalik);
+
+        // todo: before the rewards come in
+
+        rewardToken.mint(address(pointTokenVault), 3e18);
+
+        vm.prank(admin);
+        pointTokenHub.setRewardRedemption(pointsId, rewardToken, 2e18, false);
+
+        bytes32[] memory empty = new bytes32[](0);
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(pointsId, 1e18, empty), vitalik);
+
+        assertEq(rewardToken.balanceOf(vitalik), 2e18);
+    }
+
+    // additional tests:
+    // simple redemption
     // implementation is locked down
-    // Test fuzz deposit/withdraw/claim
-    // Test claim rewards simple
+    // fuzz deposit/withdraw/claim
     // redemption rights
-    // only owner can do redemption rights
-    // must have point token
-    // can set receiver for reward tokens
+    // only msg.sender can use redemption rights
+    // must have point token to use redemption rights
+    // can set receiver for reward redemption
+    // Test distribution with multiple tokens
+    // Test distribution with multiple receivers
+    // Test distribution with multiple tokens and multiple receivers
 }
 
 contract Echo {

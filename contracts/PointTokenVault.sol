@@ -21,12 +21,10 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     // Deposit asset balancess.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => token => balance
 
-    // Core merkle root distribution.
+    // Merkle root distribution.
     mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => claimed
     mapping(bytes32 => bytes32) public currRoot; // pointsId => root
     mapping(bytes32 => bytes32) public prevRoot; // pointsId => root
-
-    // Redemption rights distribution for conditional redemptions.
     mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => claimed
 
     struct Claim {
@@ -47,7 +45,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     error InvalidPointsId();
 
     constructor() {
-        _disableInitializers(); // todo: do we need this?
+        _disableInitializers();
     }
 
     function initialize(PointTokenHub _pointTokenHub) public initializer {
@@ -57,7 +55,6 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
-        // Need to transfer before minting or ERC777s could reenter.
         _token.safeTransferFrom(msg.sender, address(this), _amount);
 
         balances[_receiver][_token] += _amount;
@@ -73,14 +70,6 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         _token.safeTransfer(_receiver, _amount);
     }
 
-    // Assume the points id was created using LibString.packTwo for readable token names.
-    function updateRoot(bytes32 _newRoot, bytes32 _pointsId) external onlyOwner {
-        if (_pointsId == bytes32(0)) revert InvalidPointsId();
-        prevRoot[_pointsId] = currRoot[_pointsId];
-        currRoot[_pointsId] = _newRoot;
-        emit RootUpdated(_pointsId, _newRoot);
-    }
-
     function claimPointTokens(Claim[] calldata _claims, address _account) external {
         for (uint256 i = 0; i < _claims.length; i++) {
             _claimPointsToken(_claims[i], _account);
@@ -89,87 +78,83 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // Adopted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
     function _claimPointsToken(Claim calldata _claim, address _account) internal {
-        (bytes32 _pointsId, uint256 _claimable) = (_claim.pointsId, _claim.claimable);
+        (bytes32 pointsId, uint256 claimable) = (_claim.pointsId, _claim.claimable);
 
-        if (!isValidProof(_claim, keccak256(abi.encodePacked(_account, _pointsId, _claimable)))) {
-            revert ProofInvalidOrExpired();
-        }
+        bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, claimable));
+        uint256 claimableRemainder = verifyClaimAndGetRemainder(_claim, claimHash, _account, claimedPTokens);
 
-        uint256 alreadyClaimed = claimedPTokens[_account][_pointsId];
-        if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
+        pointTokenHub.mint(_account, pointsId, claimableRemainder);
 
-        uint256 amount;
-        unchecked {
-            amount = _claimable - alreadyClaimed;
-        }
-
-        claimedPTokens[_account][_pointsId] = _claimable;
-
-        pointTokenHub.mint(_account, _pointsId, amount);
-
-        emit PTokensClaimed(_account, _pointsId, amount);
+        emit PTokensClaimed(_account, pointsId, claimableRemainder);
     }
 
-    // Redeem points tokens for reward tokens.
-    function redeemRewards(bytes32 _pointsId, address _receiver, uint256 _amount) external {
-        (ERC20 rewardToken, uint256 exchangeRate, PointTokenHub.RedemptionType redemptionType) =
-            pointTokenHub.redemptionParams(_pointsId);
-
-        if (rewardToken == ERC20(address(0))) {
-            revert NotDistributed();
-        }
-
-        if (redemptionType == PointTokenHub.RedemptionType.Simple) {
-            pointTokenHub.burn(msg.sender, _pointsId, _amount);
-            uint256 rewardAmount = _amount * exchangeRate / 1e18;
-            rewardToken.safeTransfer(_receiver, rewardAmount);
-            emit RewardsClaimed(msg.sender, _receiver, _pointsId, rewardAmount);
-        }
-    }
-
-    // If the reward process is conditional, only address that have both the points token and redemption rights can redeem
     function redeemRewards(Claim calldata _claim, address _receiver) external {
-        (bytes32 _pointsId, uint256 _claimable) = (_claim.pointsId, _claim.claimable);
+        (bytes32 pointsId, uint256 claimable) = (_claim.pointsId, _claim.claimable);
 
-        (ERC20 rewardToken, uint256 exchangeRate, PointTokenHub.RedemptionType redemptionType) =
-            pointTokenHub.redemptionParams(_pointsId);
+        (ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased) = pointTokenHub.redemptionParams(pointsId);
 
         if (rewardToken == ERC20(address(0))) {
             revert NotDistributed();
         }
 
-        if (redemptionType == PointTokenHub.RedemptionType.Conditional) {
+        if (isMerkleBased) {
             // Admin overloads the merkle root with user redemption rights for conditional redemption.
 
             // msg.sender must have the rights
-            bytes32 claimHash = keccak256(abi.encodePacked("REDEMPTION_RIGHTS", msg.sender, _pointsId, _claimable));
-            if (!isValidProof(_claim, claimHash)) {
-                revert ProofInvalidOrExpired();
-            }
-
-            uint256 alreadyClaimed = claimedRedemptionRights[msg.sender][_pointsId];
-            if (_claimable <= alreadyClaimed) revert AlreadyClaimed();
-
-            uint256 amount;
-            unchecked {
-                amount = _claimable - alreadyClaimed;
-            }
-
-            claimedRedemptionRights[msg.sender][_pointsId] = _claimable;
+            bytes32 claimHash = keccak256(abi.encodePacked("REDEMPTION_RIGHTS", msg.sender, pointsId, claimable));
+            uint256 claimableRemainder =
+                verifyClaimAndGetRemainder(_claim, claimHash, msg.sender, claimedRedemptionRights);
 
             // Will fail if the user doesn't also have enough point tokens.
-            pointTokenHub.burn(msg.sender, _pointsId, amount);
-            uint256 rewardAmount = amount * exchangeRate / 1e18;
+            pointTokenHub.burn(msg.sender, pointsId, claimableRemainder);
+            uint256 rewardAmount = claimableRemainder * exchangeRate / 1e18;
             rewardToken.safeTransfer(_receiver, rewardAmount);
 
-            emit RewardsClaimed(msg.sender, _receiver, _pointsId, rewardAmount);
+            emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardAmount);
+        } else {
+            // Yuck. I don't like overloading the claimable variable like this. It means something different in the two cases.
+            pointTokenHub.burn(msg.sender, pointsId, claimable);
+            uint256 rewardAmount = claimable * exchangeRate / 1e18;
+            rewardToken.safeTransfer(_receiver, rewardAmount);
+            emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardAmount);
         }
     }
 
-    function isValidProof(Claim calldata _claim, bytes32 _claimHash) internal view returns (bool) {
+    function verifyClaimAndGetRemainder(
+        Claim calldata _claim,
+        bytes32 _claimHash,
+        address _account,
+        mapping(address => mapping(bytes32 => uint256)) storage _claimed
+    ) internal returns (uint256) {
         bytes32 candidateRoot = _claim.proof.processProof(_claimHash);
+        bytes32 pointsId = _claim.pointsId;
+        uint256 claimable = _claim.claimable;
 
-        return candidateRoot == currRoot[_claim.pointsId] || candidateRoot == prevRoot[_claim.pointsId];
+        if (candidateRoot != currRoot[pointsId] && candidateRoot != prevRoot[pointsId]) {
+            revert ProofInvalidOrExpired();
+        }
+
+        uint256 alreadyClaimed = _claimed[_account][pointsId];
+        if (claimable <= alreadyClaimed) revert AlreadyClaimed();
+
+        uint256 amount;
+        unchecked {
+            amount = claimable - alreadyClaimed;
+        }
+
+        _claimed[_account][pointsId] = claimable;
+
+        return amount;
+    }
+
+    // Admin ---
+
+    // Assume the points id was created using LibString.packTwo for readable token names.
+    function updateRoot(bytes32 _newRoot, bytes32 _pointsId) external onlyOwner {
+        if (_pointsId == bytes32(0)) revert InvalidPointsId();
+        prevRoot[_pointsId] = currRoot[_pointsId];
+        currRoot[_pointsId] = _newRoot;
+        emit RootUpdated(_pointsId, _newRoot);
     }
 
     // To handle arbitrary reward claiming logic.
@@ -196,19 +181,12 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     event Trusted(address indexed user, bool trusted);
-    event RewardRedemptionSet(
-        bytes32 indexed pointsId, ERC20 rewardToken, uint256 exchangeRate, RedemptionType redemptionType
-    );
-
-    enum RedemptionType {
-        Simple,
-        Conditional
-    }
+    event RewardRedemptionSet(bytes32 indexed pointsId, ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased);
 
     struct RedemptionParams {
         ERC20 rewardToken;
         uint256 exchangeRate; // Exchange rate from point token to reward token (pToken/rewardToken)
-        RedemptionType redemptionType;
+        bool isMerkleBased;
     }
 
     constructor() {
@@ -236,14 +214,12 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
     // Admin ---
 
     // Can be used to unlock reward token redemption (can also be used to lock a live redemption)
-    function setRewardRedemption(
-        bytes32 _pointsId,
-        ERC20 _rewardToken,
-        uint256 _exchangeRate,
-        RedemptionType _redemptionType
-    ) external onlyOwner {
-        redemptionParams[_pointsId] = RedemptionParams(_rewardToken, _exchangeRate, _redemptionType);
-        emit RewardRedemptionSet(_pointsId, _rewardToken, _exchangeRate, _redemptionType);
+    function setRewardRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _exchangeRate, bool _isMerkleBased)
+        external
+        onlyOwner
+    {
+        redemptionParams[_pointsId] = RedemptionParams(_rewardToken, _exchangeRate, _isMerkleBased);
+        emit RewardRedemptionSet(_pointsId, _rewardToken, _exchangeRate, _isMerkleBased);
     }
 
     function grantTokenOwnership(address _newOwner, bytes32 _pointsId) external onlyOwner {
