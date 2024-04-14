@@ -16,6 +16,8 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     using SafeTransferLib for ERC20;
     using MerkleProof for bytes32[];
 
+    bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256(abi.encodePacked("REDEMPTION_RIGHTS"));
+
     PointTokenHub public pointTokenHub;
 
     // Deposit asset balancess.
@@ -29,7 +31,8 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     struct Claim {
         bytes32 pointsId;
-        uint256 claimable;
+        uint256 totalClaimable;
+        uint256 amountToClaim;
         bytes32[] proof;
     }
 
@@ -40,7 +43,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
 
     error ProofInvalidOrExpired();
-    error AlreadyClaimed();
+    error ClaimTooLarge();
     error NotDistributed();
     error InvalidPointsId();
 
@@ -78,18 +81,18 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
     function _claimPointsToken(Claim calldata _claim, address _account) internal {
-        (bytes32 pointsId, uint256 claimable) = (_claim.pointsId, _claim.claimable);
+        (bytes32 pointsId, uint256 totalClaimable) = (_claim.pointsId, _claim.totalClaimable);
 
-        bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, claimable));
-        uint256 claimableRemainder = verifyClaimAndGetRemainder(_claim, claimHash, _account, claimedPTokens);
+        bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, totalClaimable));
+        verifyClaimAndUpdateClaimable(_claim, claimHash, _account, claimedPTokens);
 
-        pointTokenHub.mint(_account, pointsId, claimableRemainder);
+        pointTokenHub.mint(_account, pointsId, _claim.amountToClaim);
 
-        emit PTokensClaimed(_account, pointsId, claimableRemainder);
+        emit PTokensClaimed(_account, pointsId, _claim.amountToClaim);
     }
 
     function redeemRewards(Claim calldata _claim, address _receiver) external {
-        (bytes32 pointsId, uint256 claimable) = (_claim.pointsId, _claim.claimable);
+        (bytes32 pointsId, uint256 totalClaimable) = (_claim.pointsId, _claim.totalClaimable);
 
         (ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased) = pointTokenHub.redemptionParams(pointsId);
 
@@ -100,49 +103,43 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         if (isMerkleBased) {
             // Only those with redemption rights can redeem their point tokens for rewards.
 
-            bytes32 claimHash = keccak256(abi.encodePacked("REDEMPTION_RIGHTS", msg.sender, pointsId, claimable));
-            uint256 claimableRemainder =
-                verifyClaimAndGetRemainder(_claim, claimHash, msg.sender, claimedRedemptionRights);
+            bytes32 claimHash =
+                keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, totalClaimable));
+            verifyClaimAndUpdateClaimable(_claim, claimHash, msg.sender, claimedRedemptionRights);
 
             // Will fail if the user doesn't also have enough point tokens.
-            pointTokenHub.burn(msg.sender, pointsId, claimableRemainder);
-            uint256 rewardAmount = claimableRemainder * exchangeRate / 1e18;
-            rewardToken.safeTransfer(_receiver, rewardAmount);
-
-            emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardAmount);
+            pointTokenHub.burn(msg.sender, pointsId, _claim.amountToClaim * 1e18 / exchangeRate);
+            rewardToken.safeTransfer(_receiver, _claim.amountToClaim); // claimableRemainder is the reward amount.
+            emit RewardsClaimed(msg.sender, _receiver, pointsId, _claim.amountToClaim);
         } else {
-            // Anybody can redeem their point tokens for rewards.
+            // Anyone can redeem their point tokens for rewards.
 
-            // Yuck. I don't like overloading the claimable variable like this. It means something different in the two cases.
-            pointTokenHub.burn(msg.sender, pointsId, claimable);
-            uint256 rewardAmount = claimable * exchangeRate / 1e18;
-            rewardToken.safeTransfer(_receiver, rewardAmount);
-            emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardAmount);
+            pointTokenHub.burn(msg.sender, pointsId, _claim.amountToClaim * 1e18 / exchangeRate);
+            rewardToken.safeTransfer(_receiver, _claim.amountToClaim);
+            emit RewardsClaimed(msg.sender, _receiver, pointsId, _claim.amountToClaim);
         }
     }
 
-    function verifyClaimAndGetRemainder(
+    function verifyClaimAndUpdateClaimable(
         Claim calldata _claim,
         bytes32 _claimHash,
         address _account,
         mapping(address => mapping(bytes32 => uint256)) storage _claimed
-    ) internal returns (uint256 remainder) {
+    ) internal {
         bytes32 candidateRoot = _claim.proof.processProof(_claimHash);
         bytes32 pointsId = _claim.pointsId;
-        uint256 claimable = _claim.claimable;
+        uint256 totalClaimable = _claim.totalClaimable; // Assumed to be in the claim hash.
+        uint256 amountToClaim = _claim.amountToClaim;
 
         if (candidateRoot != currRoot[pointsId] && candidateRoot != prevRoot[pointsId]) {
             revert ProofInvalidOrExpired();
         }
 
         uint256 alreadyClaimed = _claimed[_account][pointsId];
-        if (claimable <= alreadyClaimed) revert AlreadyClaimed();
 
-        unchecked {
-            remainder = claimable - alreadyClaimed;
-        }
+        if (totalClaimable < alreadyClaimed + amountToClaim) revert ClaimTooLarge();
 
-        _claimed[_account][pointsId] = claimable;
+        _claimed[_account][pointsId] = amountToClaim + alreadyClaimed;
     }
 
     // Admin ---
@@ -175,7 +172,7 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
 
     struct RedemptionParams {
         ERC20 rewardToken;
-        uint256 exchangeRate; // Rate from point token to reward token (pToken/rewardToken).
+        uint256 exchangeRate; // Rate from point token to reward token (pToken/rewardToken). 18 decimals.
         bool isMerkleBased;
     }
 
@@ -212,6 +209,7 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
     // Admin ---
 
     // Can be used to unlock reward token redemption (can also be used to modify a live redemption)
+    // Should be used after claiming rewards.
     function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _exchangeRate, bool _isMerkleBased)
         external
         onlyOwner
