@@ -128,7 +128,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     ) internal {
         bytes32 candidateRoot = _claim.proof.processProof(_claimHash);
         bytes32 pointsId = _claim.pointsId;
-        uint256 totalClaimable = _claim.totalClaimable; // Assumed to be in the claim hash.
+        uint256 totalClaimable = _claim.totalClaimable; // IMPORTANT: Assumed to be in the claim hash.
         uint256 amountToClaim = _claim.amountToClaim;
 
         if (candidateRoot != currRoot[pointsId] && candidateRoot != prevRoot[pointsId]) {
