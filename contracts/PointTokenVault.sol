@@ -21,7 +21,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     PointTokenHub public pointTokenHub;
 
     // Deposit asset balancess.
-    mapping(address => mapping(ERC20 => uint256)) public balances; // user => token => balance
+    mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
 
     // Merkle root distribution.
     mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => claimed
@@ -84,7 +84,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         (bytes32 pointsId, uint256 totalClaimable) = (_claim.pointsId, _claim.totalClaimable);
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, totalClaimable));
-        verifyClaimAndUpdateClaimable(_claim, claimHash, _account, claimedPTokens);
+        verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
 
         pointTokenHub.mint(_account, pointsId, _claim.amountToClaim);
 
@@ -92,7 +92,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     function redeemRewards(Claim calldata _claim, address _receiver) external {
-        (bytes32 pointsId, uint256 totalClaimable) = (_claim.pointsId, _claim.totalClaimable);
+        (bytes32 pointsId, uint256 amountToClaim) = (_claim.pointsId, _claim.amountToClaim);
 
         (ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased) = pointTokenHub.redemptionParams(pointsId);
 
@@ -104,23 +104,23 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
             // Only those with redemption rights can redeem their point tokens for rewards.
 
             bytes32 claimHash =
-                keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, totalClaimable));
-            verifyClaimAndUpdateClaimable(_claim, claimHash, msg.sender, claimedRedemptionRights);
+                keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, _claim.totalClaimable));
+            verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
 
             // Will fail if the user doesn't also have enough point tokens.
-            pointTokenHub.burn(msg.sender, pointsId, _claim.amountToClaim * 1e18 / exchangeRate);
-            rewardToken.safeTransfer(_receiver, _claim.amountToClaim); // claimableRemainder is the reward amount.
-            emit RewardsClaimed(msg.sender, _receiver, pointsId, _claim.amountToClaim);
+            pointTokenHub.burn(msg.sender, pointsId, amountToClaim * 1e18 / exchangeRate);
+            rewardToken.safeTransfer(_receiver, amountToClaim);
+            emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
         } else {
             // Anyone can redeem their point tokens for rewards.
 
-            pointTokenHub.burn(msg.sender, pointsId, _claim.amountToClaim * 1e18 / exchangeRate);
-            rewardToken.safeTransfer(_receiver, _claim.amountToClaim);
-            emit RewardsClaimed(msg.sender, _receiver, pointsId, _claim.amountToClaim);
+            pointTokenHub.burn(msg.sender, pointsId, amountToClaim * 1e18 / exchangeRate);
+            rewardToken.safeTransfer(_receiver, amountToClaim);
+            emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
         }
     }
 
-    function verifyClaimAndUpdateClaimable(
+    function verifyClaimAndUpdateClaimed(
         Claim calldata _claim,
         bytes32 _claimHash,
         address _account,
@@ -164,10 +164,12 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 }
 
 contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
-    mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
-
+    error OnlyTrusted();
     // Trust ---
-    mapping(address => bool) isTrusted;
+
+    mapping(address => bool) isTrusted; // user => isTrusted
+
+    mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
     mapping(bytes32 => RedemptionParams) public redemptionParams; // pointsId => redemptionParams
 
     struct RedemptionParams {
@@ -177,7 +179,7 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     modifier onlyTrusted() {
-        require(isTrusted[msg.sender], "PTHub: Only trusted can call this function");
+        if (!isTrusted[msg.sender]) revert OnlyTrusted();
         _;
     }
 
@@ -195,7 +197,7 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
 
     function mint(address _account, bytes32 _pointsId, uint256 _amount) external onlyTrusted {
         if (address(pointTokens[_pointsId]) == address(0)) {
-            (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId);
+            (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
             pointTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
         }
 
