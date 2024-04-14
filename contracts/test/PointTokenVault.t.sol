@@ -48,7 +48,7 @@ contract PointTokenVaultTest is Test {
         rewardToken = new MockERC20("Reward Token", "RWT", 18);
     }
 
-    function test_Sanity() public {
+    function test_Sanity() public view {
         assertEq(address(pointTokenVault.pointTokenHub()), address(pointTokenHub));
     }
 
@@ -277,7 +277,7 @@ contract PointTokenVaultTest is Test {
         rewardToken.mint(address(pointTokenVault), 3e18);
 
         vm.prank(admin);
-        pointTokenHub.setRewardRedemption(pointsId, rewardToken, 2e18, false);
+        pointTokenHub.setRedemption(pointsId, rewardToken, 2e18, false);
 
         bytes32[] memory empty = new bytes32[](0);
         vm.prank(vitalik);

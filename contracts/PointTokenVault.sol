@@ -76,7 +76,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    // Adopted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
+    // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
     function _claimPointsToken(Claim calldata _claim, address _account) internal {
         (bytes32 pointsId, uint256 claimable) = (_claim.pointsId, _claim.claimable);
 
@@ -98,9 +98,8 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         }
 
         if (isMerkleBased) {
-            // Admin overloads the merkle root with user redemption rights for conditional redemption.
+            // Only those with redemption rights can redeem their point tokens for rewards.
 
-            // msg.sender must have the rights
             bytes32 claimHash = keccak256(abi.encodePacked("REDEMPTION_RIGHTS", msg.sender, pointsId, claimable));
             uint256 claimableRemainder =
                 verifyClaimAndGetRemainder(_claim, claimHash, msg.sender, claimedRedemptionRights);
@@ -112,6 +111,8 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
             emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardAmount);
         } else {
+            // Anybody can redeem their point tokens for rewards.
+
             // Yuck. I don't like overloading the claimable variable like this. It means something different in the two cases.
             pointTokenHub.burn(msg.sender, pointsId, claimable);
             uint256 rewardAmount = claimable * exchangeRate / 1e18;
@@ -125,7 +126,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         bytes32 _claimHash,
         address _account,
         mapping(address => mapping(bytes32 => uint256)) storage _claimed
-    ) internal returns (uint256) {
+    ) internal returns (uint256 remainder) {
         bytes32 candidateRoot = _claim.proof.processProof(_claimHash);
         bytes32 pointsId = _claim.pointsId;
         uint256 claimable = _claim.claimable;
@@ -137,14 +138,11 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         uint256 alreadyClaimed = _claimed[_account][pointsId];
         if (claimable <= alreadyClaimed) revert AlreadyClaimed();
 
-        uint256 amount;
         unchecked {
-            amount = claimable - alreadyClaimed;
+            remainder = claimable - alreadyClaimed;
         }
 
         _claimed[_account][pointsId] = claimable;
-
-        return amount;
     }
 
     // Admin ---
@@ -158,7 +156,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // To handle arbitrary reward claiming logic.
-    // TODO: can we restrict what the admin can do here?
+    // TODO: kinda scary, can we restrict what the admin can do here?
     function execute(address _to, bytes memory _data, uint256 _txGas) external onlyOwner returns (bool success) {
         assembly {
             success := delegatecall(_txGas, _to, add(_data, 0x20), mload(_data), 0, 0)
@@ -175,6 +173,12 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
     mapping(address => bool) isTrusted;
     mapping(bytes32 => RedemptionParams) public redemptionParams; // pointsId => redemptionParams
 
+    struct RedemptionParams {
+        ERC20 rewardToken;
+        uint256 exchangeRate; // Rate from point token to reward token (pToken/rewardToken).
+        bool isMerkleBased;
+    }
+
     modifier onlyTrusted() {
         require(isTrusted[msg.sender], "PTHub: Only trusted can call this function");
         _;
@@ -182,12 +186,6 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
 
     event Trusted(address indexed user, bool trusted);
     event RewardRedemptionSet(bytes32 indexed pointsId, ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased);
-
-    struct RedemptionParams {
-        ERC20 rewardToken;
-        uint256 exchangeRate; // Exchange rate from point token to reward token (pToken/rewardToken)
-        bool isMerkleBased;
-    }
 
     constructor() {
         _disableInitializers();
@@ -213,8 +211,8 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
 
     // Admin ---
 
-    // Can be used to unlock reward token redemption (can also be used to lock a live redemption)
-    function setRewardRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _exchangeRate, bool _isMerkleBased)
+    // Can be used to unlock reward token redemption (can also be used to modify a live redemption)
+    function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _exchangeRate, bool _isMerkleBased)
         external
         onlyOwner
     {
