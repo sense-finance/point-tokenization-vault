@@ -140,11 +140,11 @@ contract PointTokenVaultTest is Test {
         // Only admin can update root
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, vitalik));
         vm.prank(vitalik);
-        pointTokenVault.updateRoot(root, bytes32("1"));
+        pointTokenVault.updateRoot(root);
 
         // Update the root
         vm.prank(admin);
-        pointTokenVault.updateRoot(root, bytes32("1"));
+        pointTokenVault.updateRoot(root);
 
         // todo: can't submit bytes32(0)
     }
@@ -189,7 +189,7 @@ contract PointTokenVaultTest is Test {
         bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
         vm.prank(admin);
-        pointTokenVault.updateRoot(root, pointsId);
+        pointTokenVault.updateRoot(root);
 
         // Can't claim with the wrong proof
         vm.prank(vitalik);
@@ -228,7 +228,7 @@ contract PointTokenVaultTest is Test {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
         vm.prank(admin);
-        pointTokenVault.updateRoot(root, pointsId);
+        pointTokenVault.updateRoot(root);
 
         bytes32[] memory vitalikProof = new bytes32[](1);
         vitalikProof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
@@ -264,7 +264,7 @@ contract PointTokenVaultTest is Test {
         proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
 
         vm.prank(admin);
-        pointTokenVault.updateRoot(root, pointsId);
+        pointTokenVault.updateRoot(root);
 
         PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
         claims[0] = PointTokenVault.Claim(pointsId, 1e18, 1e18, proof);
@@ -296,7 +296,7 @@ contract PointTokenVaultTest is Test {
 
         // Set up the Merkle root and redemption parameters
         vm.startPrank(admin);
-        pointTokenVault.updateRoot(root, pointsId);
+        pointTokenVault.updateRoot(root);
         pointTokenHub.setRedemption(pointsId, rewardToken, 2e18, true); // Set isMerkleBased true
         vm.stopPrank();
 
@@ -339,7 +339,7 @@ contract PointTokenVaultTest is Test {
         bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
         vm.prank(admin);
-        pointTokenVault.updateRoot(root, pointsId);
+        pointTokenVault.updateRoot(root);
 
         // Can do a partial claim
         vm.prank(vitalik);

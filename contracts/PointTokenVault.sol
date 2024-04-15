@@ -25,8 +25,8 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // Merkle root distribution.
     mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => claimed
-    mapping(bytes32 => bytes32) public currRoot; // pointsId => root
-    mapping(bytes32 => bytes32) public prevRoot; // pointsId => root
+    bytes32 public currRoot;
+    bytes32 public prevRoot;
     mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => claimed
 
     struct Claim {
@@ -38,7 +38,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
     event Withdraw(address indexed user, address indexed token, uint256 amount);
-    event RootUpdated(bytes32 indexed pointsId, bytes32 newRoot);
+    event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
 
@@ -81,9 +81,9 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
     function _claimPointsToken(Claim calldata _claim, address _account) internal {
-        (bytes32 pointsId, uint256 totalClaimable) = (_claim.pointsId, _claim.totalClaimable);
+        bytes32 pointsId = _claim.pointsId;
 
-        bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, totalClaimable));
+        bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
         verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
 
         pointTokenHub.mint(_account, pointsId, _claim.amountToClaim);
@@ -128,10 +128,10 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     ) internal {
         bytes32 candidateRoot = _claim.proof.processProof(_claimHash);
         bytes32 pointsId = _claim.pointsId;
-        uint256 totalClaimable = _claim.totalClaimable; // IMPORTANT: Assumed to be in the claim hash.
+        uint256 totalClaimable = _claim.totalClaimable; // IMPORTANT: Must be in the claim hash.
         uint256 amountToClaim = _claim.amountToClaim;
 
-        if (candidateRoot != currRoot[pointsId] && candidateRoot != prevRoot[pointsId]) {
+        if (candidateRoot != currRoot && candidateRoot != prevRoot) {
             revert ProofInvalidOrExpired();
         }
 
@@ -145,11 +145,10 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     // Admin ---
 
     // Assume the points id was created using LibString.packTwo for readable token names.
-    function updateRoot(bytes32 _newRoot, bytes32 _pointsId) external onlyOwner {
-        if (_pointsId == bytes32(0)) revert InvalidPointsId();
-        prevRoot[_pointsId] = currRoot[_pointsId];
-        currRoot[_pointsId] = _newRoot;
-        emit RootUpdated(_pointsId, _newRoot);
+    function updateRoot(bytes32 _newRoot) external onlyOwner {
+        emit RootUpdated(prevRoot, _newRoot);
+        prevRoot = currRoot;
+        currRoot = _newRoot;
     }
 
     // To handle arbitrary reward claiming logic.
