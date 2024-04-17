@@ -44,7 +44,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
-    error NotDistributed();
+    error RewardsNotReleased();
     error InvalidPointsId();
 
     constructor() {
@@ -96,8 +96,8 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
         (ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased) = pointTokenHub.redemptionParams(pointsId);
 
-        if (rewardToken == ERC20(address(0))) {
-            revert NotDistributed();
+        if (address(rewardToken) == address(0)) {
+            revert RewardsNotReleased();
         }
 
         if (isMerkleBased) {
@@ -139,15 +139,15 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
         if (totalClaimable < alreadyClaimed + amountToClaim) revert ClaimTooLarge();
 
-        _claimed[_account][pointsId] = amountToClaim + alreadyClaimed;
+        _claimed[_account][pointsId] = alreadyClaimed + amountToClaim;
     }
 
     // Admin ---
 
     function updateRoot(bytes32 _newRoot) external onlyOwner {
-        emit RootUpdated(prevRoot, _newRoot);
         prevRoot = currRoot;
         currRoot = _newRoot;
+        emit RootUpdated(prevRoot, currRoot);
     }
 
     // To handle arbitrary reward claiming logic.
@@ -162,9 +162,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 }
 
 contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
-    error OnlyTrusted();
     // Trust ---
-
     mapping(address => bool) isTrusted; // user => isTrusted
 
     mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
@@ -176,13 +174,15 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
         bool isMerkleBased;
     }
 
+    event Trusted(address indexed user, bool trusted);
+    event RewardRedemptionSet(bytes32 indexed pointsId, ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased);
+
+    error OnlyTrusted();
+
     modifier onlyTrusted() {
         if (!isTrusted[msg.sender]) revert OnlyTrusted();
         _;
     }
-
-    event Trusted(address indexed user, bool trusted);
-    event RewardRedemptionSet(bytes32 indexed pointsId, ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased);
 
     constructor() {
         _disableInitializers();
@@ -208,8 +208,8 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
 
     // Admin ---
 
-    // Can be used to unlock reward token redemption (can also be used to modify a live redemption)
-    // Should be used after claiming rewards.
+    // Can be used to unlock reward token redemption (can also be used to modify a live redemption).
+    // Should only be used after rewards have been claimed.
     function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _exchangeRate, bool _isMerkleBased)
         external
         onlyOwner
