@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-import {LibString} from "solady/utils/LibString.sol";
-
-import {PToken} from "./PToken.sol";
+import {PointTokenHub} from "./PointTokenHub.sol";
 
 contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     using SafeTransferLib for ERC20;
@@ -84,7 +81,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         bytes32 pointsId = _claim.pointsId;
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
-        verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
+        _verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
 
         pointTokenHub.mint(_account, pointsId, _claim.amountToClaim);
 
@@ -105,7 +102,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
             bytes32 claimHash =
                 keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, _claim.totalClaimable));
-            verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
+            _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
 
             // Will fail if the user doesn't also have enough point tokens.
             pointTokenHub.burn(msg.sender, pointsId, amountToClaim * 1e18 / exchangeRate);
@@ -120,7 +117,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    function verifyClaimAndUpdateClaimed(
+    function _verifyClaimAndUpdateClaimed(
         Claim calldata _claim,
         bytes32 _claimHash,
         address _account,
@@ -156,75 +153,6 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         assembly {
             success := delegatecall(_txGas, _to, add(_data, 0x20), mload(_data), 0, 0)
         }
-    }
-
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
-}
-
-contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
-    // Trust ---
-    mapping(address => bool) isTrusted; // user => isTrusted
-
-    mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
-    mapping(bytes32 => RedemptionParams) public redemptionParams; // pointsId => redemptionParams
-
-    struct RedemptionParams {
-        ERC20 rewardToken;
-        uint256 exchangeRate; // Rate from point token to reward token (pToken/rewardToken). 18 decimals.
-        bool isMerkleBased;
-    }
-
-    event Trusted(address indexed user, bool trusted);
-    event RewardRedemptionSet(bytes32 indexed pointsId, ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased);
-
-    error OnlyTrusted();
-
-    modifier onlyTrusted() {
-        if (!isTrusted[msg.sender]) revert OnlyTrusted();
-        _;
-    }
-
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
-    }
-
-    function mint(address _account, bytes32 _pointsId, uint256 _amount) external onlyTrusted {
-        if (address(pointTokens[_pointsId]) == address(0)) {
-            (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
-            pointTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
-        }
-
-        pointTokens[_pointsId].mint(_account, _amount);
-    }
-
-    function burn(address _account, bytes32 _pointsId, uint256 _amount) external onlyTrusted {
-        pointTokens[_pointsId].burn(_account, _amount);
-    }
-
-    // Admin ---
-
-    // Can be used to unlock reward token redemption (can also be used to modify a live redemption).
-    // Should only be used after rewards have been claimed.
-    function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _exchangeRate, bool _isMerkleBased)
-        external
-        onlyOwner
-    {
-        redemptionParams[_pointsId] = RedemptionParams(_rewardToken, _exchangeRate, _isMerkleBased);
-        emit RewardRedemptionSet(_pointsId, _rewardToken, _exchangeRate, _isMerkleBased);
-    }
-
-    function grantTokenOwnership(address _newOwner, bytes32 _pointsId) external onlyOwner {
-        pointTokens[_pointsId].transferOwnership(_newOwner);
-    }
-
-    function setTrusted(address _user, bool _isTrusted) external onlyOwner {
-        isTrusted[_user] = _isTrusted;
-        emit Trusted(_user, _isTrusted);
     }
 
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}

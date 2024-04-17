@@ -2,7 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {PointTokenVault, PointTokenHub} from "../PointTokenVault.sol";
+import {PointTokenVault} from "../PointTokenVault.sol";
+import {PointTokenHub} from "../PointTokenHub.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
@@ -117,9 +118,9 @@ contract PointTokenVaultTest is Test {
         vm.prank(admin);
         pointTokenVault.upgradeToAndCall(address(newPointTokenVault), bytes(""));
 
-        // Check that the state is still there
+        // Check that the state is still there.
         assertEq(address(pointTokenVault.pointTokenHub()), address(pointTokenHub));
-        // Check that the implementation is updated
+        // Check that the implementation has been updated.
         address implementation = address(
             uint160(
                 uint256(
@@ -145,8 +146,6 @@ contract PointTokenVaultTest is Test {
         // Update the root
         vm.prank(admin);
         pointTokenVault.updateRoot(root);
-
-        // todo: can't submit bytes32(0)
     }
 
     function test_ExecuteAuth(address lad) public {
