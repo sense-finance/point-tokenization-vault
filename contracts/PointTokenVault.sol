@@ -36,7 +36,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         bytes32[] proof;
     }
 
-    event Deposit(address indexed user, address indexed token, uint256 amount);
+    event Deposit(address indexed receiver, address indexed token, uint256 amount);
     event Withdraw(address indexed user, address indexed token, uint256 amount);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
@@ -68,19 +68,19 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     function withdraw(ERC20 _token, uint256 _amount, address _receiver) public {
         balances[msg.sender][_token] -= _amount;
 
-        emit Withdraw(msg.sender, address(_token), _amount);
+        emit Withdraw(_receiver, address(_token), _amount);
 
         _token.safeTransfer(_receiver, _amount);
     }
 
     function claimPointTokens(Claim[] calldata _claims, address _account) external {
         for (uint256 i = 0; i < _claims.length; i++) {
-            _claimPointsToken(_claims[i], _account);
+            _claimPointsToke(_claims[i], _account);
         }
     }
 
     // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
-    function _claimPointsToken(Claim calldata _claim, address _account) internal {
+    function _claimPointsToke(Claim calldata _claim, address _account) internal {
         bytes32 pointsId = _claim.pointsId;
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
@@ -144,7 +144,6 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // Admin ---
 
-    // Assume the points id was created using LibString.packTwo for readable token names.
     function updateRoot(bytes32 _newRoot) external onlyOwner {
         emit RootUpdated(prevRoot, _newRoot);
         prevRoot = currRoot;
