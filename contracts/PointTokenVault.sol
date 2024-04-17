@@ -84,7 +84,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         bytes32 pointsId = _claim.pointsId;
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
-        verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
+        _verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
 
         pointTokenHub.mint(_account, pointsId, _claim.amountToClaim);
 
@@ -105,7 +105,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
             bytes32 claimHash =
                 keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, _claim.totalClaimable));
-            verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
+            _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
 
             // Will fail if the user doesn't also have enough point tokens.
             pointTokenHub.burn(msg.sender, pointsId, amountToClaim * 1e18 / exchangeRate);
@@ -120,7 +120,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
         }
     }
 
-    function verifyClaimAndUpdateClaimed(
+    function _verifyClaimAndUpdateClaimed(
         Claim calldata _claim,
         bytes32 _claimHash,
         address _account,
@@ -166,7 +166,7 @@ contract PointTokenHub is UUPSUpgradeable, OwnableUpgradeable {
     error OnlyTrusted();
     // Trust ---
 
-    mapping(address => bool) isTrusted; // user => isTrusted
+    mapping(address => bool) public isTrusted; // user => isTrusted
 
     mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
     mapping(bytes32 => RedemptionParams) public redemptionParams; // pointsId => redemptionParams
