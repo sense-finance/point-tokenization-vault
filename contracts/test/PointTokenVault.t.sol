@@ -7,6 +7,7 @@ import {PointTokenHub} from "../PointTokenHub.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
@@ -28,6 +29,7 @@ contract PointTokenVaultTest is Test {
     address toly = makeAddr("toly");
     address illia = makeAddr("illia");
     address admin = makeAddr("admin");
+    address merkleUpdater = makeAddr("merkleUpdater");
 
     function setUp() public {
         pointTokenHub = PointTokenHub(
@@ -39,10 +41,11 @@ contract PointTokenVaultTest is Test {
             )
         );
 
-        pointTokenHub.setTrusted(address(pointTokenVault), true);
+        pointTokenHub.grantRole(pointTokenHub.DEFAULT_ADMIN_ROLE(), address(admin));
+        pointTokenHub.grantRole(pointTokenHub.MINT_BURN_ROLE(), address(pointTokenVault));
 
-        pointTokenHub.transferOwnership(address(admin));
-        pointTokenVault.transferOwnership(address(admin));
+        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(admin));
+        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), address(merkleUpdater));
 
         // Deploy a mock token
         pointEarningToken = new MockERC20("Test Token", "TST", 18);
@@ -103,15 +106,23 @@ contract PointTokenVaultTest is Test {
         PointTokenVault newPointTokenVault = new PointTokenVault();
 
         // Only admin can upgrade
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, vitalik));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, vitalik, pointTokenHub.DEFAULT_ADMIN_ROLE()
+            )
+        );
         vm.prank(vitalik);
         pointTokenHub.upgradeToAndCall(address(newPointTokenHub), bytes(""));
 
         vm.prank(admin);
         pointTokenHub.upgradeToAndCall(address(newPointTokenHub), bytes(""));
 
-        // Only admin can upgrade
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, vitalik));
+        // Only admin role can upgrade
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, vitalik, pointTokenVault.DEFAULT_ADMIN_ROLE()
+            )
+        );
         vm.prank(vitalik);
         pointTokenVault.upgradeToAndCall(address(newPointTokenVault), bytes(""));
 
@@ -138,20 +149,28 @@ contract PointTokenVaultTest is Test {
     function test_UpdateRoot() public {
         bytes32 root = 0x5842148bc6ebeb52af882a317c765fccd3ae80589b21a9b8cbf21abb630e46a7;
 
-        // Only admin can update root
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, vitalik));
+        // Only merkle root updater role can update root
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, vitalik, pointTokenVault.MERKLE_UPDATER_ROLE()
+            )
+        );
         vm.prank(vitalik);
         pointTokenVault.updateRoot(root);
 
         // Update the root
-        vm.prank(admin);
+        vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
     }
 
     function test_ExecuteAuth(address lad) public {
         vm.assume(lad != admin);
         // Only admin can exec
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, lad));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, lad, pointTokenVault.DEFAULT_ADMIN_ROLE()
+            )
+        );
         vm.prank(lad);
         pointTokenVault.execute(vitalik, bytes(""), 0);
     }
@@ -187,7 +206,7 @@ contract PointTokenVaultTest is Test {
 
         bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
-        vm.prank(admin);
+        vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
         // Can't claim with the wrong proof
@@ -226,7 +245,7 @@ contract PointTokenVaultTest is Test {
         // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
-        vm.prank(admin);
+        vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
         bytes32[] memory vitalikProof = new bytes32[](1);
@@ -262,7 +281,7 @@ contract PointTokenVaultTest is Test {
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
 
-        vm.prank(admin);
+        vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
         PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
@@ -294,10 +313,10 @@ contract PointTokenVaultTest is Test {
         validProofVitalikPToken[1] = 0xae126f1299213c869259b52ab24f7270f3cce1de54c187271c52373d8947c2fe;
 
         // Set up the Merkle root and redemption parameters
-        vm.startPrank(admin);
+        vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
+        vm.prank(admin);
         pointTokenHub.setRedemption(pointsId, rewardToken, 2e18, true); // Set isMerkleBased true
-        vm.stopPrank();
 
         // Mint tokens and distribute
         vm.prank(admin);
@@ -337,7 +356,7 @@ contract PointTokenVaultTest is Test {
 
         bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
-        vm.prank(admin);
+        vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
         // Can do a partial claim
@@ -366,6 +385,7 @@ contract PointTokenVaultTest is Test {
     // decimals and dust checks
     // implementation is locked down
     // fuzz deposit/withdraw/claim
+    // not just anyone can mint or burn
     // redemption rights
     // only msg.sender can use redemption rights
     // must have point token to use redemption rights

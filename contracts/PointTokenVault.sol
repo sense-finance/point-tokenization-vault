@@ -3,17 +3,19 @@ pragma solidity ^0.8.13;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 import {PointTokenHub} from "./PointTokenHub.sol";
 
-contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
+contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
     using SafeTransferLib for ERC20;
     using MerkleProof for bytes32[];
 
-    bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256(abi.encodePacked("REDEMPTION_RIGHTS"));
+    bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
+    bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256("REDEMPTION_RIGHTS");
 
     PointTokenHub public pointTokenHub;
 
@@ -42,15 +44,15 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
     error RewardsNotReleased();
-    error InvalidPointsId();
 
     constructor() {
         _disableInitializers();
     }
 
     function initialize(PointTokenHub _pointTokenHub) public initializer {
-        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
+        __AccessControl_init_unchained();
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         pointTokenHub = _pointTokenHub;
     }
 
@@ -65,9 +67,9 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
     function withdraw(ERC20 _token, uint256 _amount, address _receiver) public {
         balances[msg.sender][_token] -= _amount;
 
-        emit Withdraw(_receiver, address(_token), _amount);
-
         _token.safeTransfer(_receiver, _amount);
+
+        emit Withdraw(_receiver, address(_token), _amount);
     }
 
     function claimPointTokens(Claim[] calldata _claims, address _account) external {
@@ -141,7 +143,7 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // Admin ---
 
-    function updateRoot(bytes32 _newRoot) external onlyOwner {
+    function updateRoot(bytes32 _newRoot) external onlyRole(MERKLE_UPDATER_ROLE) {
         prevRoot = currRoot;
         currRoot = _newRoot;
         emit RootUpdated(prevRoot, currRoot);
@@ -149,11 +151,15 @@ contract PointTokenVault is UUPSUpgradeable, OwnableUpgradeable {
 
     // To handle arbitrary reward claiming logic.
     // TODO: kinda scary, can we restrict what the admin can do here?
-    function execute(address _to, bytes memory _data, uint256 _txGas) external onlyOwner returns (bool success) {
+    function execute(address _to, bytes memory _data, uint256 _txGas)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (bool success)
+    {
         assembly {
             success := delegatecall(_txGas, _to, add(_data, 0x20), mload(_data), 0, 0)
         }
     }
 
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address _newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }
