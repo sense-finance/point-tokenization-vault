@@ -28,12 +28,12 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
 
     // Merkle root distribution.
-    mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => claimed
     bytes32 public currRoot;
     bytes32 public prevRoot;
+    mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => claimed
     mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => claimed
 
-    mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
+    mapping(bytes32 => PToken) public pTokens; // pointsId => pTokens
 
     mapping(bytes32 => RedemptionParams) public redemptions; // pointsId => redemptionParams
 
@@ -46,7 +46,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     struct RedemptionParams {
         ERC20 rewardToken;
-        uint256 rewardsPerPointToken; // Assume 18 decimals.
+        uint256 rewardsPerPToken; // Assume 18 decimals.
         bool isMerkleBased;
     }
 
@@ -56,7 +56,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
     event RewardRedemptionSet(
-        bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPointToken, bool isMerkleBased
+        bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased
     );
 
     error ProofInvalidOrExpired();
@@ -95,13 +95,13 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     /// @param _claim The claim details including the merkle proof
     /// @param _account The account to claim for
     // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
-    function claimPointToken(Claim calldata _claim, address _account) public {
+    function claimPTokens(Claim calldata _claim, address _account) public {
         bytes32 pointsId = _claim.pointsId;
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
         _verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
 
-        pointTokens[pointsId].mint(_account, _claim.amountToClaim);
+        pTokens[pointsId].mint(_account, _claim.amountToClaim);
 
         emit PTokensClaimed(_account, pointsId, _claim.amountToClaim);
     }
@@ -113,8 +113,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         (bytes32 pointsId, uint256 amountToClaim) = (_claim.pointsId, _claim.amountToClaim);
 
         RedemptionParams memory params = redemptions[pointsId];
-        (ERC20 rewardToken, uint256 rewardsPerPointToken, bool isMerkleBased) =
-            (params.rewardToken, params.rewardsPerPointToken, params.isMerkleBased);
+        (ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased) =
+            (params.rewardToken, params.rewardsPerPToken, params.isMerkleBased);
 
         if (address(rewardToken) == address(0)) {
             revert RewardsNotReleased();
@@ -129,18 +129,18 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         }
 
         // Will fail if the user doesn't also have enough point tokens.
-        pointTokens[pointsId].burn(msg.sender, amountToClaim * 1e18 / rewardsPerPointToken);
+        pTokens[pointsId].burn(msg.sender, amountToClaim * 1e18 / rewardsPerPToken);
         rewardToken.safeTransfer(_receiver, amountToClaim);
         emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
     }
 
     function deployPToken(bytes32 _pointsId) public {
-        if (address(pointTokens[_pointsId]) != address(0)) {
+        if (address(pTokens[_pointsId]) != address(0)) {
             revert PTokenAlreadyDeployed();
         }
 
         (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
-        pointTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
+        pTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
     }
 
     // Internal ---
@@ -181,12 +181,12 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     // Can be used to unlock reward token redemption (can also modify a live redemption, so use with care).
-    function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _rewardsPerPointToken, bool _isMerkleBased)
+    function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _rewardsPerPToken, bool _isMerkleBased)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        redemptions[_pointsId] = RedemptionParams(_rewardToken, _rewardsPerPointToken, _isMerkleBased);
-        emit RewardRedemptionSet(_pointsId, _rewardToken, _rewardsPerPointToken, _isMerkleBased);
+        redemptions[_pointsId] = RedemptionParams(_rewardToken, _rewardsPerPToken, _isMerkleBased);
+        emit RewardRedemptionSet(_pointsId, _rewardToken, _rewardsPerPToken, _isMerkleBased);
     }
 
     // To handle arbitrary reward claiming logic.
