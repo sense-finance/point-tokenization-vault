@@ -26,6 +26,7 @@ contract PointTokenVaultTest is Test {
     address toly = makeAddr("toly");
     address illia = makeAddr("illia");
     address admin = makeAddr("admin");
+    address operator = makeAddr("operator");
     address merkleUpdater = makeAddr("merkleUpdater");
 
     bytes32 eigenPointsId = LibString.packTwo("Eigen Layer Point", "pEL");
@@ -35,14 +36,18 @@ contract PointTokenVaultTest is Test {
             address(new ERC1967Proxy(address(PTVSingleton), abi.encodeCall(PointTokenVault.initialize, ())))
         );
 
-        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(admin));
-        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), address(merkleUpdater));
-
-        pointTokenVault.deployPToken(eigenPointsId);
+        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
+        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
+        pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
+        pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
 
         // Deploy a mock token
         pointEarningToken = new MockERC20("Test Token", "TST", 18);
         rewardToken = new MockERC20("Reward Token", "RWT", 18);
+
+        pointTokenVault.deployPToken(eigenPointsId);
+        vm.prank(operator);
+        pointTokenVault.setCap(address(pointEarningToken), type(uint256).max);
     }
 
     function test_Deposit() public {
@@ -88,6 +93,46 @@ contract PointTokenVaultTest is Test {
 
         assertEq(pointTokenVault.balances(toly, pointEarningToken), 0);
         assertEq(pointTokenVault.balances(vitalik, pointEarningToken), 0);
+    }
+
+    function test_DepositCaps() public {
+        // Deploy a new mock token
+        MockERC20 newMockToken = new MockERC20("New Test Token", "NTT", 18);
+
+        // Set a cap for the new token
+        uint256 capAmount = 1e18; // 1 token cap
+        vm.prank(operator);
+        pointTokenVault.setCap(address(newMockToken), capAmount);
+
+        // Mint tokens to vitalik
+        newMockToken.mint(vitalik, 2e18); // 2 tokens
+
+        // Approve and try to deposit more than the cap
+        vm.startPrank(vitalik);
+        newMockToken.approve(address(pointTokenVault), 2e18);
+        vm.expectRevert(PointTokenVault.DepositExceedsCap.selector);
+        pointTokenVault.deposit(newMockToken, 1.5e18, vitalik); // Try to deposit 1.5 tokens
+        vm.stopPrank();
+
+        // Approve and deposit exactly at the cap
+        vm.startPrank(vitalik);
+        newMockToken.approve(address(pointTokenVault), 1e18);
+        pointTokenVault.deposit(newMockToken, 1e18, vitalik); // Deposit exactly 1 token
+        vm.stopPrank();
+
+        assertEq(pointTokenVault.balances(vitalik, newMockToken), 1e18);
+
+        // Remove the cap
+        vm.prank(operator);
+        pointTokenVault.setIsCapped(false);
+
+        // Approve and deposit more than the previous cap
+        vm.startPrank(vitalik);
+        newMockToken.approve(address(pointTokenVault), 1e18);
+        pointTokenVault.deposit(newMockToken, 1e18, vitalik); // Deposit another 1 token
+        vm.stopPrank();
+
+        assertEq(pointTokenVault.balances(vitalik, newMockToken), 2e18); // Total 2 tokens deposited
     }
 
     function test_DeployPToken() public {
@@ -306,7 +351,7 @@ contract PointTokenVaultTest is Test {
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
-        vm.prank(admin);
+        vm.prank(operator);
         pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
 
         bytes32[] memory empty = new bytes32[](0);
@@ -328,7 +373,7 @@ contract PointTokenVaultTest is Test {
         // Set up the Merkle root and redemption parameters
         vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
-        vm.prank(admin);
+        vm.prank(operator);
         pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, true); // Set isMerkleBased true
 
         // Mint tokens and distribute

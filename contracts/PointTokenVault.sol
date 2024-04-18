@@ -23,6 +23,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256("REDEMPTION_RIGHTS");
     bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     // Deposit asset balancess.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
@@ -36,6 +37,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(bytes32 => PToken) public pTokens; // pointsId => pTokens
 
     mapping(bytes32 => RedemptionParams) public redemptions; // pointsId => redemptionParams
+
+    mapping(address => uint256) public caps; // asset => deposit cap
+    bool public isCapped;
 
     struct Claim {
         bytes32 pointsId;
@@ -58,11 +62,13 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event RewardRedemptionSet(
         bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased
     );
+    event PTokenDeployed(bytes32 indexed pointsId, address indexed pToken);
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
     error RewardsNotReleased();
     error PTokenAlreadyDeployed();
+    error DepositExceedsCap();
 
     constructor() {
         _disableInitializers();
@@ -73,9 +79,14 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         __AccessControl_init();
         __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        isCapped = true;
     }
 
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
+        if (isCapped && (_amount + _token.balanceOf(address(this)) > caps[address(_token)])) {
+            revert DepositExceedsCap();
+        }
+
         _token.safeTransferFrom(msg.sender, address(this), _amount);
 
         balances[_receiver][_token] += _amount;
@@ -141,6 +152,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
         pTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
+        emit PTokenDeployed(_pointsId, address(pTokens[_pointsId]));
     }
 
     // Internal ---
@@ -180,10 +192,18 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         emit RootUpdated(prevRoot, currRoot);
     }
 
+    function setCap(address _token, uint256 _cap) external onlyRole(OPERATOR_ROLE) {
+        caps[_token] = _cap;
+    }
+
+    function setIsCapped(bool _isCapped) external onlyRole(OPERATOR_ROLE) {
+        isCapped = _isCapped;
+    }
+
     // Can be used to unlock reward token redemption (can also modify a live redemption, so use with care).
     function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _rewardsPerPToken, bool _isMerkleBased)
         external
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyRole(OPERATOR_ROLE)
     {
         redemptions[_pointsId] = RedemptionParams(_rewardToken, _rewardsPerPToken, _isMerkleBased);
         emit RewardRedemptionSet(_pointsId, _rewardToken, _rewardsPerPToken, _isMerkleBased);

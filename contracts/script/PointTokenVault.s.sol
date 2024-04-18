@@ -29,15 +29,18 @@ contract DeployPointTokenSystem is Script {
 
         // token.balanceOf(SAM);
 
-        PointTokenVault PTVSingleton = new PointTokenVault();
+        PointTokenVault PointTokenVaultImplementation = new PointTokenVault();
 
         // TODO: use create two for deterministic addresses across chains
         PointTokenVault pointTokenVault = PointTokenVault(
-            address(new ERC1967Proxy(address(PTVSingleton), abi.encodeCall(PointTokenVault.initialize, ())))
+            address(
+                new ERC1967Proxy(address(PointTokenVaultImplementation), abi.encodeCall(PointTokenVault.initialize, ()))
+            )
         );
 
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), SEOPLIA_ADMIN_SAFE);
+        pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
 
         // pointTokenVault.upgradeToAndCall(address(PTVSingleton), bytes(""));
 
