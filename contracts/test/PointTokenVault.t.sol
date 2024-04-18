@@ -275,6 +275,23 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(toly), 0.5e18);
     }
 
+    function test_MulticallAuth(address lad) public {
+        vm.assume(lad != admin);
+        // Only admin can exec
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, lad, pointTokenVault.MERKLE_UPDATER_ROLE()
+            )
+        );
+        vm.prank(lad);
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = abi.encodeCall(pointTokenVault.updateRoot, (bytes32("123")));
+        pointTokenVault.multicall(calls);
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.multicall(calls);
+    }
+
     function test_SimpleRedemption() public {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 

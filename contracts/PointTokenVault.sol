@@ -69,9 +69,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     function initialize() public initializer {
-        __Multicall_init();
         __UUPSUpgradeable_init();
         __AccessControl_init();
+        __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
