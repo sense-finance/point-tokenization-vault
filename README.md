@@ -1,8 +1,8 @@
 # Point Tokenization Vault
 
-Deposit points-earning tokens into the vault. Collect tokenized versions of your points – distributed at some cadence. These tokens can be traded or used in DeFi. Withdraw your points-earning tokens whenever you want and resume earning normal illiquid points.
+Deposit points-earning tokens into the vault. Collect tokenized versions of your points, distributed at some cadence. These tokens can be traded or used in DeFi. Withdraw your points-earning tokens whenever you want and resume earning normal, illiquid points.
 
-These contracts are only a piece of a larger decentralized system that will allow users to tokenize their points. Here is a UMD for the entire system:
+These contracts are only a piece of a larger decentralized system that will allow users to tokenize their points. Here is a UMD of the entire system:
 
 <img src="./assets/point-tokenization-system.png" width="500" height="500">
 
@@ -16,8 +16,8 @@ These contracts are only a piece of a larger decentralized system that will allo
 ### On The Off-Chain Dependencies
 
 - The vault is highly dependent on trusted actors – namely, the merkle updator and the admin
-- The trusted actors will slowly be replaced by a stake-validated network (e.g. an [Eigen AVS](https://docs.eigenlayer.xyz/eigenlayer/overview/key-terms))
-- In the merkle root lies the universe, if you look closely enough
+- The trusted actors will slowly be replaced by a stake-validated network (e.g. an [Eigen AVS Oracle](https://docs.eigenlayer.xyz/eigenlayer/overview/key-terms))
+- If you wish to make a merkle root from scratch, you must first
 
 ### Redemption Rights
 
