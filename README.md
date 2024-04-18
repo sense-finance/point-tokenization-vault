@@ -1,8 +1,5 @@
 # Point Tokenization Vault
 
-
-## Description
-
 Deposit points-earning tokens into the vault. Collect tokenized versions of your points – distributed at some cadence. These tokens can be traded or used in DeFi. Withdraw your points-earning tokens whenever you want and resume earning normal illiquid points.
 
 These contracts are only a piece of a larger decentralized system that will allow users to tokenize their points. Here is a UMD for the entire system:
@@ -21,6 +18,14 @@ These contracts are only a piece of a larger decentralized system that will allo
 - The vault is highly dependent on trusted actors – namely, the merkle updator and the admin
 - The trusted actors will slowly be replaced by a stake-validated network (e.g. an [Eigen AVS](https://docs.eigenlayer.xyz/eigenlayer/overview/key-terms))
 - In the merkle root lies the universe, if you look closely enough
+
+### Redemption Rights
+
+- For most points programs, simple redemption where users redeem fungible PTokens for rewards will suffice
+- For programs with vesting, we take a snapshot of PToken balances at the time of distribution and grant redemption rights
+- This allows users to redeem only portions of their PTokens in a controlled manner
+- Even if they sell their PTokens, they will keep the rights, and can buy back cheaply and redeem if the PTokens are mispriced on the market
+- We assume that the exchange rate between points and rewards stays the same throughout the redemption period
 
 
 ## Installation
