@@ -4,7 +4,7 @@ Deposit points-earning tokens into the vault. Collect tokenized versions of your
 
 These contracts are only a piece of a larger decentralized system that will allow users to tokenize their points. Here is a UMD for the entire system:
 
-![Point Tokenization System](./assets/point-tokenization-system.png)
+<img src="./assets/point-tokenization-system.png" width="250" height="250">
 
 ### PToken
 

@@ -121,7 +121,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         }
 
         if (isMerkleBased) {
-            // If it's merkle-based, only those callers with redemption rights can redeem their point tokens for rewards.
+            // If it's merkle-based, only those callers with redemption rights can redeem their point token for rewards.
 
             bytes32 claimHash =
                 keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, _claim.totalClaimable));
@@ -167,7 +167,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         if (_claim.totalClaimable < alreadyClaimed + amountToClaim) revert ClaimTooLarge();
 
         // Update the total claimed amount.
-        _claimed[_account][pointsId] = alreadyClaimed + amountToClaim;
+        unchecked {
+            _claimed[_account][pointsId] = alreadyClaimed + amountToClaim;
+        }
     }
 
     // Admin ---
