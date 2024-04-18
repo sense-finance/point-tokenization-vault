@@ -2,19 +2,27 @@
 pragma solidity ^0.8.13;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract PToken is ERC20, Ownable {
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract PToken is ERC20, AccessControl {
+    bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
+    bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
+
     constructor(string memory _name, string memory _symbol, uint8 _decimals)
         ERC20(_name, _symbol, _decimals)
-        Ownable(msg.sender)
-    {}
+        AccessControl()
+    {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINT_ROLE, msg.sender);
+        _grantRole(BURN_ROLE, msg.sender);
+    }
 
-    function mint(address to, uint256 value) public virtual onlyOwner {
+    function mint(address to, uint256 value) public virtual onlyRole(MINT_ROLE) {
         _mint(to, value);
     }
 
-    function burn(address from, uint256 value) public virtual onlyOwner {
+    function burn(address from, uint256 value) public virtual onlyRole(BURN_ROLE) {
         _burn(from, value);
     }
 }

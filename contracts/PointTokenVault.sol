@@ -2,22 +2,27 @@
 pragma solidity ^0.8.13;
 
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from
     "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
+import {MulticallUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
+
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-import {PointTokenHub} from "./PointTokenHub.sol";
+import {LibString} from "solady/utils/LibString.sol";
 
-contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
+import {PToken} from "./PToken.sol";
+
+/// @title Point Token Vault
+/// @notice Manages deposits and withdrawals for points-earning assets, point token claims, and reward redemptions.
+contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, MulticallUpgradeable {
     using SafeTransferLib for ERC20;
     using MerkleProof for bytes32[];
 
-    bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
     bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256("REDEMPTION_RIGHTS");
-
-    PointTokenHub public pointTokenHub;
+    bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
 
     // Deposit asset balancess.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
@@ -28,6 +33,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
     bytes32 public prevRoot;
     mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => claimed
 
+    mapping(bytes32 => PToken) public pointTokens; // pointsId => pointTokens
+
+    mapping(bytes32 => RedemptionParams) public redemptions; // pointsId => redemptionParams
+
     struct Claim {
         bytes32 pointsId;
         uint256 totalClaimable;
@@ -35,25 +44,35 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
         bytes32[] proof;
     }
 
+    struct RedemptionParams {
+        ERC20 rewardToken;
+        uint256 rewardsPerPointToken; // Assume 18 decimals.
+        bool isMerkleBased;
+    }
+
     event Deposit(address indexed receiver, address indexed token, uint256 amount);
     event Withdraw(address indexed user, address indexed token, uint256 amount);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
+    event RewardRedemptionSet(
+        bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPointToken, bool isMerkleBased
+    );
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
     error RewardsNotReleased();
+    error PTokenAlreadyDeployed();
 
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(PointTokenHub _pointTokenHub) public initializer {
+    function initialize() public initializer {
+        __Multicall_init();
         __UUPSUpgradeable_init();
-        __AccessControl_init_unchained();
+        __AccessControl_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        pointTokenHub = _pointTokenHub;
     }
 
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
@@ -72,52 +91,59 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
         emit Withdraw(_receiver, address(_token), _amount);
     }
 
-    function claimPointTokens(Claim[] calldata _claims, address _account) external {
-        for (uint256 i = 0; i < _claims.length; i++) {
-            _claimPointsToke(_claims[i], _account);
-        }
-    }
-
+    /// @notice Claims point tokens after verifying the merkle proof
+    /// @param _claim The claim details including the merkle proof
+    /// @param _account The account to claim for
     // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
-    function _claimPointsToke(Claim calldata _claim, address _account) internal {
+    function claimPointToken(Claim calldata _claim, address _account) public {
         bytes32 pointsId = _claim.pointsId;
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
         _verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
 
-        pointTokenHub.mint(_account, pointsId, _claim.amountToClaim);
+        pointTokens[pointsId].mint(_account, _claim.amountToClaim);
 
         emit PTokensClaimed(_account, pointsId, _claim.amountToClaim);
     }
 
-    function redeemRewards(Claim calldata _claim, address _receiver) external {
+    /// @notice Redeems rewards for point tokens
+    /// @param _claim Details of the claim including the amount and merkle proof
+    /// @param _receiver The account that will receive the msg.sender redeemed rewards
+    function redeemRewards(Claim calldata _claim, address _receiver) public {
         (bytes32 pointsId, uint256 amountToClaim) = (_claim.pointsId, _claim.amountToClaim);
 
-        (ERC20 rewardToken, uint256 exchangeRate, bool isMerkleBased) = pointTokenHub.redemptionParams(pointsId);
+        RedemptionParams memory params = redemptions[pointsId];
+        (ERC20 rewardToken, uint256 rewardsPerPointToken, bool isMerkleBased) =
+            (params.rewardToken, params.rewardsPerPointToken, params.isMerkleBased);
 
         if (address(rewardToken) == address(0)) {
             revert RewardsNotReleased();
         }
 
         if (isMerkleBased) {
-            // Only those with redemption rights can redeem their point tokens for rewards.
+            // If it's merkle-based, only those callers with redemption rights can redeem their point tokens for rewards.
 
             bytes32 claimHash =
                 keccak256(abi.encodePacked(REDEMPTION_RIGHTS_PREFIX, msg.sender, pointsId, _claim.totalClaimable));
             _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
-
-            // Will fail if the user doesn't also have enough point tokens.
-            pointTokenHub.burn(msg.sender, pointsId, amountToClaim * 1e18 / exchangeRate);
-            rewardToken.safeTransfer(_receiver, amountToClaim);
-            emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
-        } else {
-            // Anyone can redeem their point tokens for rewards.
-
-            pointTokenHub.burn(msg.sender, pointsId, amountToClaim * 1e18 / exchangeRate);
-            rewardToken.safeTransfer(_receiver, amountToClaim);
-            emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
         }
+
+        // Will fail if the user doesn't also have enough point tokens.
+        pointTokens[pointsId].burn(msg.sender, amountToClaim * 1e18 / rewardsPerPointToken);
+        rewardToken.safeTransfer(_receiver, amountToClaim);
+        emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
     }
+
+    function deployPToken(bytes32 _pointsId) public {
+        if (address(pointTokens[_pointsId]) != address(0)) {
+            revert PTokenAlreadyDeployed();
+        }
+
+        (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
+        pointTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
+    }
+
+    // Internal ---
 
     function _verifyClaimAndUpdateClaimed(
         Claim calldata _claim,
@@ -127,17 +153,20 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
     ) internal {
         bytes32 candidateRoot = _claim.proof.processProof(_claimHash);
         bytes32 pointsId = _claim.pointsId;
-        uint256 totalClaimable = _claim.totalClaimable; // IMPORTANT: Must be in the claim hash.
         uint256 amountToClaim = _claim.amountToClaim;
 
+        // Check if the root is valid.
         if (candidateRoot != currRoot && candidateRoot != prevRoot) {
             revert ProofInvalidOrExpired();
         }
 
         uint256 alreadyClaimed = _claimed[_account][pointsId];
 
-        if (totalClaimable < alreadyClaimed + amountToClaim) revert ClaimTooLarge();
+        // Can claim up to the total claimable amount from the hash.
+        // IMPORTANT: totalClaimable must be in the claim hash passed into this function.
+        if (_claim.totalClaimable < alreadyClaimed + amountToClaim) revert ClaimTooLarge();
 
+        // Update the total claimed amount.
         _claimed[_account][pointsId] = alreadyClaimed + amountToClaim;
     }
 
@@ -149,8 +178,16 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable {
         emit RootUpdated(prevRoot, currRoot);
     }
 
+    // Can be used to unlock reward token redemption (can also modify a live redemption, so use with care).
+    function setRedemption(bytes32 _pointsId, ERC20 _rewardToken, uint256 _rewardsPerPointToken, bool _isMerkleBased)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        redemptions[_pointsId] = RedemptionParams(_rewardToken, _rewardsPerPointToken, _isMerkleBased);
+        emit RewardRedemptionSet(_pointsId, _rewardToken, _rewardsPerPointToken, _isMerkleBased);
+    }
+
     // To handle arbitrary reward claiming logic.
-    // TODO: kinda scary, can we restrict what the admin can do here?
     function execute(address _to, bytes memory _data, uint256 _txGas)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)

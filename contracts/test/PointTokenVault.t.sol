@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {PointTokenVault} from "../PointTokenVault.sol";
-import {PointTokenHub} from "../PointTokenHub.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
@@ -16,10 +15,8 @@ import {LibString} from "solady/utils/LibString.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 contract PointTokenVaultTest is Test {
-    PointTokenHub PTHubSingleton = new PointTokenHub();
     PointTokenVault PTVSingleton = new PointTokenVault();
 
-    PointTokenHub pointTokenHub;
     PointTokenVault pointTokenVault;
 
     MockERC20 pointEarningToken;
@@ -31,29 +28,21 @@ contract PointTokenVaultTest is Test {
     address admin = makeAddr("admin");
     address merkleUpdater = makeAddr("merkleUpdater");
 
-    function setUp() public {
-        pointTokenHub = PointTokenHub(
-            address(new ERC1967Proxy(address(PTHubSingleton), abi.encodeCall(PointTokenHub.initialize, ())))
-        );
-        pointTokenVault = PointTokenVault(
-            address(
-                new ERC1967Proxy(address(PTVSingleton), abi.encodeCall(PointTokenVault.initialize, (pointTokenHub)))
-            )
-        );
+    bytes32 eigenPointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
-        pointTokenHub.grantRole(pointTokenHub.DEFAULT_ADMIN_ROLE(), address(admin));
-        pointTokenHub.grantRole(pointTokenHub.MINT_BURN_ROLE(), address(pointTokenVault));
+    function setUp() public {
+        pointTokenVault = PointTokenVault(
+            address(new ERC1967Proxy(address(PTVSingleton), abi.encodeCall(PointTokenVault.initialize, ())))
+        );
 
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(admin));
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), address(merkleUpdater));
 
+        pointTokenVault.deployPToken(eigenPointsId);
+
         // Deploy a mock token
         pointEarningToken = new MockERC20("Test Token", "TST", 18);
         rewardToken = new MockERC20("Reward Token", "RWT", 18);
-    }
-
-    function test_Sanity() public view {
-        assertEq(address(pointTokenVault.pointTokenHub()), address(pointTokenHub));
     }
 
     function test_Deposit() public {
@@ -101,21 +90,19 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.balances(vitalik, pointEarningToken), 0);
     }
 
+    function test_DeployPToken() public {
+        // Can't deploy the same token twice
+        vm.expectRevert(PointTokenVault.PTokenAlreadyDeployed.selector);
+        pointTokenVault.deployPToken(eigenPointsId);
+
+        // Name and symbol are set correctly
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).name(), "Eigen Layer Point");
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).symbol(), "pEL");
+    }
+
     function test_ProxyUpgrade() public {
-        PointTokenHub newPointTokenHub = new PointTokenHub();
         PointTokenVault newPointTokenVault = new PointTokenVault();
-
-        // Only admin can upgrade
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, vitalik, pointTokenHub.DEFAULT_ADMIN_ROLE()
-            )
-        );
-        vm.prank(vitalik);
-        pointTokenHub.upgradeToAndCall(address(newPointTokenHub), bytes(""));
-
-        vm.prank(admin);
-        pointTokenHub.upgradeToAndCall(address(newPointTokenHub), bytes(""));
+        address eigenPointTokenPre = address(pointTokenVault.pointTokens(eigenPointsId));
 
         // Only admin role can upgrade
         vm.expectRevert(
@@ -130,7 +117,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.upgradeToAndCall(address(newPointTokenVault), bytes(""));
 
         // Check that the state is still there.
-        assertEq(address(pointTokenVault.pointTokenHub()), address(pointTokenHub));
+        assertEq(address(pointTokenVault.pointTokens(eigenPointsId)), eigenPointTokenPre);
         // Check that the implementation has been updated.
         address implementation = address(
             uint160(
@@ -202,46 +189,36 @@ contract PointTokenVaultTest is Test {
         bytes32[] memory badProof = new bytes32[](1);
         badProof[0] = 0x6d06cb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
 
-        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
-
-        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
-
         vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
         // Can't claim with the wrong proof
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 1e18, badProof);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, badProof), vitalik);
 
         // Can't claim with the wrong claimable amount
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(pointsId, 0.9e18, 0.9e18, goodProof);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 0.9e18, 0.9e18, goodProof), vitalik);
 
         // Can't claim with the wrong pointsId
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(bytes32("123"), 1e18, 1e18, goodProof);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(bytes32("123"), 1e18, 1e18, goodProof), vitalik);
 
         // Can claim with the right proof
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 1e18, goodProof);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik);
 
-        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(vitalik), 1e18);
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(vitalik), 1e18);
 
         // Can't use the same proof twice
         vm.expectRevert(PointTokenVault.ClaimTooLarge.selector);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik);
     }
 
     function test_DistributionTwoRecipients() public {
-        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
-
         // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
@@ -251,31 +228,54 @@ contract PointTokenVaultTest is Test {
         bytes32[] memory vitalikProof = new bytes32[](1);
         vitalikProof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
 
-        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
-
         // Vitalik can claim
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 1e18, vitalikProof);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, vitalikProof), vitalik);
 
-        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(vitalik), 1e18);
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(vitalik), 1e18);
 
         bytes32[] memory tolyProof = new bytes32[](1);
         tolyProof[0] = 0x77ec2184ee10de8d8164b15f7f9e734a985dbe8a49e28feb2793ab17c9ed215c;
 
         // Illia can execute toly's claim, but can only send the tokens to toly
         vm.prank(illia);
-        claims[0] = PointTokenVault.Claim(pointsId, 0.5e18, 0.5e18, tolyProof);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPointTokens(claims, illia);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), illia);
 
-        pointTokenVault.claimPointTokens(claims, toly);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), toly);
 
-        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(toly), 0.5e18);
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(toly), 0.5e18);
+    }
+
+    function test_MultiClaim() public {
+        // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory vitalikProof = new bytes32[](1);
+        vitalikProof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        bytes32[] memory tolyProof = new bytes32[](1);
+        tolyProof[0] = 0x77ec2184ee10de8d8164b15f7f9e734a985dbe8a49e28feb2793ab17c9ed215c;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeCall(
+            pointTokenVault.claimPointToken, (PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, vitalikProof), vitalik)
+        );
+        calls[1] = abi.encodeCall(
+            pointTokenVault.claimPointToken, (PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), toly)
+        );
+
+        pointTokenVault.multicall(calls);
+
+        // Claimed for both vitalik and toly at once.
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(vitalik), 1e18);
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(toly), 0.5e18);
     }
 
     function test_SimpleRedemption() public {
-        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
         bytes32[] memory proof = new bytes32[](1);
@@ -284,20 +284,17 @@ contract PointTokenVaultTest is Test {
         vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
-        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 1e18, proof);
-
         vm.prank(vitalik);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
         vm.prank(admin);
-        pointTokenHub.setRedemption(pointsId, rewardToken, 2e18, false);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
 
         bytes32[] memory empty = new bytes32[](0);
         vm.prank(vitalik);
-        pointTokenVault.redeemRewards(PointTokenVault.Claim(pointsId, 2e18, 2e18, empty), vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
 
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
     }
@@ -305,7 +302,6 @@ contract PointTokenVaultTest is Test {
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
 
     function test_MerkleBasedRedemption() public {
-        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
         bytes32 root = 0x409fd0e46d8453765fb513ae35a1899d667478c40233b67360023c86927eb802;
 
         bytes32[] memory validProofVitalikPToken = new bytes32[](2);
@@ -316,24 +312,23 @@ contract PointTokenVaultTest is Test {
         vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
         vm.prank(admin);
-        pointTokenHub.setRedemption(pointsId, rewardToken, 2e18, true); // Set isMerkleBased true
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, true); // Set isMerkleBased true
 
         // Mint tokens and distribute
         vm.prank(admin);
         rewardToken.mint(address(pointTokenVault), 5e18); // Ensure enough rewards are in the vault
 
-        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 1e18, validProofVitalikPToken);
-
         // Vitalik redeems with a valid proof
         vm.prank(vitalik);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(
+            PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, validProofVitalikPToken), vitalik
+        );
 
         // Must use a merkle proof to redeem rewards
         bytes32[] memory empty = new bytes32[](0);
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.redeemRewards(PointTokenVault.Claim(pointsId, 2e18, 2e18, empty), vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
 
         bytes32[] memory validProofVitalikRedemption = new bytes32[](1);
         validProofVitalikRedemption[0] = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
@@ -341,8 +336,10 @@ contract PointTokenVaultTest is Test {
         // Redeem the tokens for rewards with the right proof
         vm.prank(vitalik);
         vm.expectEmit(true, true, true, true);
-        emit RewardsClaimed(vitalik, vitalik, pointsId, 2e18);
-        pointTokenVault.redeemRewards(PointTokenVault.Claim(pointsId, 2e18, 2e18, validProofVitalikRedemption), vitalik);
+        emit RewardsClaimed(vitalik, vitalik, eigenPointsId, 2e18);
+        pointTokenVault.redeemRewards(
+            PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, validProofVitalikRedemption), vitalik
+        );
 
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
     }
@@ -352,48 +349,26 @@ contract PointTokenVaultTest is Test {
         proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
-        PointTokenVault.Claim[] memory claims = new PointTokenVault.Claim[](1);
-
-        bytes32 pointsId = LibString.packTwo("Eigen Layer Point", "pEL");
-
         vm.prank(merkleUpdater);
         pointTokenVault.updateRoot(root);
 
         // Can do a partial claim
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 0.5e18, proof);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik);
 
-        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(vitalik), 0.5e18);
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(vitalik), 0.5e18);
 
         // Can only claim the remainder, no more
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ClaimTooLarge.selector);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 0.75e18, proof);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 0.75e18, proof), vitalik);
 
         // Can claim the rest
         vm.prank(vitalik);
-        claims[0] = PointTokenVault.Claim(pointsId, 1e18, 0.5e18, proof);
-        pointTokenVault.claimPointTokens(claims, vitalik);
+        pointTokenVault.claimPointToken(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik);
 
-        assertEq(pointTokenHub.pointTokens(pointsId).balanceOf(vitalik), 1e18);
+        assertEq(pointTokenVault.pointTokens(eigenPointsId).balanceOf(vitalik), 1e18);
     }
-
-    // additional tests:
-    // set rewards before the distribution has taken place
-    // decimals and dust checks
-    // implementation is locked down
-    // fuzz deposit/withdraw/claim
-    // not just anyone can mint or burn
-    // redemption rights
-    // only msg.sender can use redemption rights
-    // must have point token to use redemption rights
-    // can set receiver for reward redemption
-    // Test distribution with multiple tokens
-    // Test distribution with multiple receivers
-    // Test distribution with multiple tokens and multiple receivers
-    // Weird setRedemption possibilities
 }
 
 contract Echo {

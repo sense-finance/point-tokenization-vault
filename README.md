@@ -1,1 +1,70 @@
-## Point Tokenization Vault
+# Point Tokenization Vault
+
+
+## Description
+
+Deposit points-earning tokens into the vault. Collect tokenized versions of your points – distributed at some cadence. These tokens can be traded or used in DeFi. Withdraw your points-earning tokens whenever you want and resume earning normal illiquid points.
+
+These contracts are only a piece of a larger decentralized system that will allow users to tokenize their points. Here is a UMD for the entire system:
+
+![Point Tokenization System](./assets/point-tokenization-system.png)
+
+### PToken
+
+- PTokens are tokenized versions of points
+- They will be redeemable for rewards after rewards have been distributed
+- They will map 1:1 with the points earned by user assets depsoited into the vault
+- The vault has ownership and can grant minting/burning permissions to other contracts for future system expansion
+
+### On The Off-Chain Dependencies
+
+- The vault is highly dependent on trusted actors – namely, the merkle updator and the admin
+- The trusted actors will slowly be replaced by a stake-validated network (e.g. an [Eigen AVS](https://docs.eigenlayer.xyz/eigenlayer/overview/key-terms))
+- In the merkle root lies the universe, if you look closely enough
+
+
+## Installation
+
+To install with [Foundry](https://github.com/gakonst/foundry):
+
+```
+forge install [user]/[repo]
+```
+
+## Local development
+
+This project uses [Foundry](https://github.com/gakonst/foundry) as the development framework.
+
+### Dependencies
+
+```
+forge install
+```
+
+### Compilation
+
+```
+forge build
+```
+
+### Testing
+
+```
+forge test
+```
+
+### Contract deployment
+
+Please create a `.env` file before deployment.
+
+#### Dryrun
+
+```
+forge script script/PointTokenVault.s.sol -f [network]
+```
+
+### Live
+
+```
+forge script script/PointTokenVault.s.sol -f [network] --verify --broadcast
+```
