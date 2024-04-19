@@ -16,3 +16,7 @@ docs/
 node_modules/
 build/
 tasks/
+
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/**/dry-run/
