@@ -9,6 +9,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
 contract DeployPointTokenSystem is Script {
+    // Sepolia Test Accounts
     address payable public JIM = payable(0xD6633c1382896079D3576eC43519d844a8C80B56);
     address payable public SAM = payable(0xeeD5B3026060218Dc270AE672be6468053e65E39);
     address payable public AVA = payable(0xb30C79546800EF35Ea1fAae56A5faA5C03332D9F);
@@ -18,10 +19,11 @@ contract DeployPointTokenSystem is Script {
     uint256 AVA_PRIVATE_KEY = 0x7617580e9556785c7f9bb93e652df98b6acd0de459300711afbcf53e40ce0358;
 
     address public SEOPLIA_MERKLE_BOT_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3;
+    address public SEPOLIA_OPERATOR_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3;
     address public SEOPLIA_ADMIN_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3; // todo: change to actual admin safe
 
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY_MERKLE_BOT_A");
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
         // token.approve(address(pointTokenVault), 5e18);
@@ -40,14 +42,39 @@ contract DeployPointTokenSystem is Script {
 
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), SEOPLIA_ADMIN_SAFE);
+        pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
 
-        // pointTokenVault.upgradeToAndCall(address(PTVSingleton), bytes(""));
+        vm.stopBroadcast();
+    }
 
-        // pointTokenHub.setTrusted(address(pointTokenVault), true);
+    function deposit() {
+        vm.startBroadcast(JIM_PRIVATE_KEY);
 
-        // pointTokenHub.transferOwnership(SEOPLIA_SAFE_ADDRESS);
-        // pointTokenVault.transferOwnership(SEOPLIA_SAFE_ADDRESS);
+        token.approve(address(pointTokenVault), 5e18);
+        pointTokenVault.deposit(token, 5e18, JIM);
+
+        token.balanceOf(JIM);
+
+        vm.stopBroadcast();
+    }
+
+    function upgrade() {
+        vm.startBroadcast();
+
+        PointTokenVault PointTokenVaultImplementation = new PointTokenVault();
+
+        pointTokenVault.upgradeToAndCall(address(PointTokenVaultImplementation), bytes(""));
+
+        vm.stopBroadcast();
+    }
+
+    function deployMockERC20() {
+        vm.startBroadcast(JIM_PRIVATE_KEY);
+
+        MockERC20 token = new MockERC20("Test Token", "TST", 18);
+
+        token.mint(JIM, 100e18);
 
         vm.stopBroadcast();
     }
