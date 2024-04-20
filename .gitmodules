@@ -16,3 +16,6 @@
 [submodule "lib/forge-safe"]
 	path = lib/forge-safe
 	url = https://github.com/sense-finance/forge-safe
+[submodule "lib/create3-factory"]
+	path = lib/create3-factory
+	url = https://github.com/zeframlou/create3-factory
