@@ -14,9 +14,9 @@ import {LibString} from "solady/utils/LibString.sol";
 
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
-contract PointTokenVaultTest is Test {
-    PointTokenVault PTVSingleton = new PointTokenVault();
+import {PointTokenVaultScripts} from "../script/PointTokenVault.s.sol";
 
+contract PointTokenVaultTest is Test {
     PointTokenVault pointTokenVault;
 
     MockERC20 pointEarningToken;
@@ -32,9 +32,10 @@ contract PointTokenVaultTest is Test {
     bytes32 eigenPointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
     function setUp() public {
-        pointTokenVault = PointTokenVault(
-            address(new ERC1967Proxy(address(PTVSingleton), abi.encodeCall(PointTokenVault.initialize, ())))
-        );
+        PointTokenVaultScripts scripts = new PointTokenVaultScripts();
+
+        // Deploy the PointTokenVault
+        pointTokenVault = scripts.deployPointTokenVault(address(this));
 
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
