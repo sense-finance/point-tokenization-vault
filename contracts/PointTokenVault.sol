@@ -63,12 +63,14 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased
     );
     event PTokenDeployed(bytes32 indexed pointsId, address indexed pToken);
+    event CapSet(address indexed token, uint256 cap);
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
     error RewardsNotReleased();
     error PTokenAlreadyDeployed();
     error DepositExceedsCap();
+    error PTokenNotDeployed();
 
     constructor() {
         _disableInitializers();
@@ -82,6 +84,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         isCapped = true;
     }
 
+    // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
         if (isCapped && (_amount + _token.balanceOf(address(this)) > caps[address(_token)])) {
             revert DepositExceedsCap();
@@ -111,6 +114,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
         _verifyClaimAndUpdateClaimed(_claim, claimHash, _account, claimedPTokens);
+
+        if (address(pTokens[pointsId]) == address(0)) {
+            revert PTokenNotDeployed();
+        }
 
         pTokens[pointsId].mint(_account, _claim.amountToClaim);
 
@@ -194,6 +201,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     function setCap(address _token, uint256 _cap) external onlyRole(OPERATOR_ROLE) {
         caps[_token] = _cap;
+        emit CapSet(_token, _cap);
     }
 
     function setIsCapped(bool _isCapped) external onlyRole(OPERATOR_ROLE) {
