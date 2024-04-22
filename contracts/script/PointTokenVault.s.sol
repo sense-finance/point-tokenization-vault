@@ -8,6 +8,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {CREATE3} from "solmate/utils/CREATE3.sol";
+import {LibString} from "solady/utils/LibString.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -27,9 +28,18 @@ contract PointTokenVaultScripts is BatchScript {
 
     function run() public returns (address) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+
         vm.startBroadcast(deployerPrivateKey);
 
-        PointTokenVault pointTokenVault = deployPointTokenVault(address(this));
+        PointTokenVault pointTokenVaultImplementation = new PointTokenVault();
+
+        PointTokenVault pointTokenVault = PointTokenVault(
+            address(
+                new ERC1967Proxy(
+                    address(pointTokenVaultImplementation), abi.encodeCall(PointTokenVault.initialize, (msg.sender))
+                )
+            )
+        );
 
         // Set roles
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
@@ -37,27 +47,13 @@ contract PointTokenVaultScripts is BatchScript {
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
 
         // Remove self
-        pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
+        pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender);
+
+        require(!pointTokenVault.hasRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender), "Self role not removed");
 
         vm.stopBroadcast();
 
         return address(pointTokenVault);
-
-        // PointTokenVault pointTokenVault = PointTokenVault(
-        //     address(
-        //         new ERC1967Proxy(address(pointTokenVaultImplementation), abi.encodeCall(PointTokenVault.initialize, ()))
-        //     )
-        // );
-
-        // PointTokenVault pointTokenVaultProxy = PointTokenVault(
-        //     create3.deploy(
-        //         getCreate3ContractSalt("ERC1967Proxy"),
-        //         bytes.concat(
-        //             type(ERC1967Proxy).creationCode,
-        //             abi.encode(address(pointTokenVaultImplementation), abi.encodeCall(PointTokenVault.initialize, ()))
-        //         )
-        //     )
-        // );
     }
 
     function deployPointTokenVault(address admin) public returns (PointTokenVault) {
@@ -88,11 +84,12 @@ contract PointTokenVaultScripts is BatchScript {
     function deposit() public returns (uint256) {
         vm.startBroadcast(JIM_PRIVATE_KEY);
 
-        ERC20 token = ERC20(0x8Ff06724e15B6ACcAeD6164DE2ab9FA15c4980ad);
-        PointTokenVault pointTokenVault = PointTokenVault(0x8Ff06724e15B6ACcAeD6164DE2ab9FA15c4980ad);
+        ERC20 token = ERC20(0x791a051631c9c4cDf4E03Fb7Aec3163AE164A34B);
+        PointTokenVault pointTokenVault = PointTokenVault(0xbff7Fb79efC49504afc97e74F83EE618768e63E9);
+        token.symbol();
 
-        token.approve(address(pointTokenVault), 5e18);
-        pointTokenVault.deposit(token, 5e18, JIM);
+        token.approve(address(pointTokenVault), 2.5e18);
+        pointTokenVault.deposit(token, 2.5e18, JIM);
 
         vm.stopBroadcast();
 
@@ -102,7 +99,7 @@ contract PointTokenVaultScripts is BatchScript {
     function upgrade() public {
         vm.startBroadcast();
 
-        PointTokenVault currentPointTokenVault = PointTokenVault(0x8Ff06724e15B6ACcAeD6164DE2ab9FA15c4980ad);
+        PointTokenVault currentPointTokenVault = PointTokenVault(0xbff7Fb79efC49504afc97e74F83EE618768e63E9);
 
         PointTokenVault PointTokenVaultImplementation = new PointTokenVault();
 
@@ -111,10 +108,20 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
+    function deployPToken() public {
+        vm.startBroadcast(JIM_PRIVATE_KEY);
+
+        PointTokenVault pointTokenVault = PointTokenVault(0xbff7Fb79efC49504afc97e74F83EE618768e63E9);
+
+        pointTokenVault.deployPToken(LibString.packTwo("ETHERFI Points", "pEF"));
+
+        vm.stopBroadcast();
+    }
+
     function deployMockERC20() public {
         vm.startBroadcast(JIM_PRIVATE_KEY);
 
-        MockERC20 token = new MockERC20("Test Token", "TST", 18);
+        MockERC20 token = new MockERC20("ETHFI", "eETH", 18);
 
         token.mint(JIM, 100e18);
         token.mint(SAM, 100e18);
@@ -124,14 +131,13 @@ contract PointTokenVaultScripts is BatchScript {
     }
 
     function setCap() public {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        bytes32 root = 0x1230000000000000000000000000000000000000000000000000000000000000;
+        address pointTokenVault = 0xbff7Fb79efC49504afc97e74F83EE618768e63E9;
 
-        address pointTokenVault = 0x8Ff06724e15B6ACcAeD6164DE2ab9FA15c4980ad;
-
-        bytes memory txn = abi.encodeWithSelector(PointTokenVault.updateRoot.selector, root);
+        bytes memory txn =
+            abi.encodeWithSelector(PointTokenVault.setCap.selector, 0x791a051631c9c4cDf4E03Fb7Aec3163AE164A34B, 10e18);
         addToBatch(pointTokenVault, 0, txn);
 
         executeBatch(SEOPLIA_ADMIN_SAFE, true);
