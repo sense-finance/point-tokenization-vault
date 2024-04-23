@@ -109,7 +109,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     /// @notice Claims point tokens after verifying the merkle proof
     /// @param _claim The claim details including the merkle proof
     /// @param _account The account to claim for
-    // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/main/src/common/rewards-distribution/RewardsDistributor.sol)
+    // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/ffd702f045d24b911d6c8c6c2194dd15cf9387ff/src/common/rewards-distribution/RewardsDistributor.sol)
     function claimPTokens(Claim calldata _claim, address _account) public {
         bytes32 pointsId = _claim.pointsId;
 
@@ -151,6 +151,19 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         pTokens[pointsId].burn(msg.sender, FixedPointMathLib.divWadUp(amountToClaim, rewardsPerPToken)); // Round up for burn.
         rewardToken.safeTransfer(_receiver, amountToClaim);
         emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
+    }
+
+    /// @notice Mints point tokens for rewards after redemption has been enabled
+    function convertRewardsToPTokens(address _receiver, bytes32 _pointsId, uint256 _amountToConvert) public {
+        RedemptionParams memory params = redemptions[_pointsId];
+        (ERC20 rewardToken, uint256 rewardsPerPToken) = (params.rewardToken, params.rewardsPerPToken);
+
+        if (address(rewardToken) == address(0)) {
+            revert RewardsNotReleased();
+        }
+
+        rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);
+        pTokens[_pointsId].mint(_receiver, FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken)); // Round down for mint.
     }
 
     function deployPToken(bytes32 _pointsId) public {
