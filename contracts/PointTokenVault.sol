@@ -12,6 +12,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 import {LibString} from "solady/utils/LibString.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {PToken} from "./PToken.sol";
 
@@ -146,8 +147,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
         }
 
-        // Will fail if the user doesn't also have enough point tokens.
-        pTokens[pointsId].burn(msg.sender, amountToClaim * 1e18 / rewardsPerPToken);
+        // Will fail if the user doesn't also have enough point tokens. Assume rewardsPerPToken is 18 decimals.
+        pTokens[pointsId].burn(msg.sender, FixedPointMathLib.divWadUp(amountToClaim, rewardsPerPToken)); // Round up for burn.
         rewardToken.safeTransfer(_receiver, amountToClaim);
         emit RewardsClaimed(msg.sender, _receiver, pointsId, amountToClaim);
     }

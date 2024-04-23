@@ -56,9 +56,7 @@ contract PointTokenVaultScripts is BatchScript {
         return address(pointTokenVault);
     }
 
-    function deployPointTokenVault(address admin) public returns (PointTokenVault) {
-        string memory version = vm.envString("VERSION");
-
+    function deployPointTokenVault(address admin, string memory version) public returns (PointTokenVault) {
         PointTokenVault pointTokenVaultImplementation = PointTokenVault(
             CREATE3.deploy(
                 keccak256(bytes(string.concat("PointTokenVault", "-v", version))), type(PointTokenVault).creationCode, 0

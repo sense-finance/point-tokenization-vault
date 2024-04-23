@@ -35,7 +35,7 @@ contract PointTokenVaultTest is Test {
         PointTokenVaultScripts scripts = new PointTokenVaultScripts();
 
         // Deploy the PointTokenVault
-        pointTokenVault = scripts.deployPointTokenVault(address(this));
+        pointTokenVault = scripts.deployPointTokenVault(address(this), "0.0.1");
 
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
@@ -362,6 +362,32 @@ contract PointTokenVaultTest is Test {
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
     }
 
+    function test_RedeemRounding() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+
+        rewardToken.mint(address(pointTokenVault), 3e18);
+
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
+
+        bytes32[] memory empty = new bytes32[](0);
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 1, empty), vitalik);
+
+        assertEq(rewardToken.balanceOf(vitalik), 1);
+        // Even the smallest redemption results in a burn.
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18 - 1);
+    }
+
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
 
     function test_MerkleBasedRedemption() public {
@@ -385,7 +411,7 @@ contract PointTokenVaultTest is Test {
         vm.prank(vitalik);
         pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, validProofVitalikPToken), vitalik);
 
-        // Must use a merkle proof to redeem rewards
+        // Redeem the tokens for rewards with the wrong proof should fail
         bytes32[] memory empty = new bytes32[](0);
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
@@ -394,7 +420,7 @@ contract PointTokenVaultTest is Test {
         bytes32[] memory validProofVitalikRedemption = new bytes32[](1);
         validProofVitalikRedemption[0] = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
-        // Redeem the tokens for rewards with the right proof
+        // Redeem the tokens for rewards with the right proof should succeed
         vm.prank(vitalik);
         vm.expectEmit(true, true, true, true);
         emit RewardsClaimed(vitalik, vitalik, eigenPointsId, 2e18);
