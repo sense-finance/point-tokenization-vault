@@ -24,16 +24,20 @@ contract PointTokenVaultScripts is BatchScript {
 
     address public SEOPLIA_MERKLE_BOT_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3;
     address public SEPOLIA_OPERATOR_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3;
-    address public SEOPLIA_ADMIN_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3; // todo: change to actual admin safe
+    address public SEOPLIA_ADMIN_SAFE = 0xec48011b60be299A2684F36Bdb3B498a61A6CbF3;
+
+    address public MAINNET_MERKLE_UPDATER = 0xfDE9f367c933A7D7E7348D4a3e6e096d814F5828;
+    address public MAINNET_OPERATOR = 0x0c0264Ba7799dA7aF0fd141ba5Ba976E6DcC6C17;
+    address public MAINNET_ADMIN = 0x9D89745fD63Af482ce93a9AdB8B0BbDbb98D3e06;
+
+    string public VERSION = "0.0.1";
 
     function run() public returns (address) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
-        string memory version = vm.prompt("Enter PointTokenVault version:");
-
         vm.startBroadcast(deployerPrivateKey);
 
-        PointTokenVault pointTokenVault = run(version);
+        PointTokenVault pointTokenVault = run(VERSION);
 
         // Set roles
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
