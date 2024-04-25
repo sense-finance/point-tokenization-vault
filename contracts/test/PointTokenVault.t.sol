@@ -497,6 +497,22 @@ contract PointTokenVaultTest is Test {
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
     }
+
+    function test_ReceiveETH() public payable {
+        // Amount of ETH to send
+        uint256 amountToSend = 1 ether;
+
+        // Record the initial balance of the PointTokenVault
+        uint256 initialBalance = address(pointTokenVault).balance;
+
+        // Send ETH to the PointTokenVault
+        (bool sent,) = address(pointTokenVault).call{value: 1 ether}("");
+        require(sent, "Failed to send Ether");
+
+        // Check the new balance of the PointTokenVault
+        uint256 newBalance = address(pointTokenVault).balance;
+        assertEq(newBalance, initialBalance + amountToSend);
+    }
 }
 
 contract Echo {

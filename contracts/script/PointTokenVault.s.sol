@@ -53,13 +53,13 @@ contract PointTokenVaultScripts is BatchScript {
     function run(string memory version) public returns (PointTokenVault) {
         PointTokenVault pointTokenVaultImplementation = new PointTokenVault{salt: keccak256(abi.encode(version))}();
 
-        PointTokenVault pointTokenVault = PointTokenVault(
+        PointTokenVault pointTokenVault = PointTokenVault(payable(
             address(
                 new ERC1967Proxy{salt: keccak256(abi.encode(version))}(
                     address(pointTokenVaultImplementation),
                     abi.encodeCall(PointTokenVault.initialize, (msg.sender)) // msg.sender is admin
                 )
-            )
+            ))
         );
 
         return pointTokenVault;
@@ -69,7 +69,7 @@ contract PointTokenVaultScripts is BatchScript {
         vm.startBroadcast(JIM_PRIVATE_KEY);
 
         ERC20 token = ERC20(0x791a051631c9c4cDf4E03Fb7Aec3163AE164A34B);
-        PointTokenVault pointTokenVault = PointTokenVault(0xbff7Fb79efC49504afc97e74F83EE618768e63E9);
+        PointTokenVault pointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
         token.symbol();
 
         token.approve(address(pointTokenVault), 2.5e18);
@@ -83,7 +83,7 @@ contract PointTokenVaultScripts is BatchScript {
     function upgrade() public {
         vm.startBroadcast();
 
-        PointTokenVault currentPointTokenVault = PointTokenVault(0xbff7Fb79efC49504afc97e74F83EE618768e63E9);
+        PointTokenVault currentPointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
 
         PointTokenVault PointTokenVaultImplementation = new PointTokenVault();
 
@@ -95,7 +95,7 @@ contract PointTokenVaultScripts is BatchScript {
     function deployPToken() public {
         vm.startBroadcast(JIM_PRIVATE_KEY);
 
-        PointTokenVault pointTokenVault = PointTokenVault(0xbff7Fb79efC49504afc97e74F83EE618768e63E9);
+        PointTokenVault pointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
 
         pointTokenVault.deployPToken(LibString.packTwo("ETHERFI Points", "pEF"));
 
