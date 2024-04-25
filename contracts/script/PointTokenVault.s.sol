@@ -29,17 +29,11 @@ contract PointTokenVaultScripts is BatchScript {
     function run() public returns (address) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
+        string memory version = vm.prompt("Enter PointTokenVault version:");
+
         vm.startBroadcast(deployerPrivateKey);
 
-        PointTokenVault pointTokenVaultImplementation = new PointTokenVault();
-
-        PointTokenVault pointTokenVault = PointTokenVault(
-            address(
-                new ERC1967Proxy(
-                    address(pointTokenVaultImplementation), abi.encodeCall(PointTokenVault.initialize, (msg.sender))
-                )
-            )
-        );
+        PointTokenVault pointTokenVault = run(version);
 
         // Set roles
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
@@ -56,23 +50,15 @@ contract PointTokenVaultScripts is BatchScript {
         return address(pointTokenVault);
     }
 
-    function deployPointTokenVault(address admin, string memory version) public returns (PointTokenVault) {
-        PointTokenVault pointTokenVaultImplementation = PointTokenVault(
-            CREATE3.deploy(
-                keccak256(bytes(string.concat("PointTokenVault", "-v", version))), type(PointTokenVault).creationCode, 0
-            )
-        );
+    function run(string memory version) public returns (PointTokenVault) {
+        PointTokenVault pointTokenVaultImplementation = new PointTokenVault{salt: keccak256(abi.encode(version))}();
 
         PointTokenVault pointTokenVault = PointTokenVault(
-            CREATE3.deploy(
-                keccak256(bytes(string.concat("PointTokenVaultProxy", "-v", version))),
-                abi.encodePacked(
-                    type(ERC1967Proxy).creationCode,
-                    abi.encode(
-                        address(pointTokenVaultImplementation), abi.encodeCall(PointTokenVault.initialize, (admin))
-                    )
-                ),
-                0
+            address(
+                new ERC1967Proxy{salt: keccak256(abi.encode(version))}(
+                    address(pointTokenVaultImplementation),
+                    abi.encodeCall(PointTokenVault.initialize, (msg.sender)) // msg.sender is admin
+                )
             )
         );
 

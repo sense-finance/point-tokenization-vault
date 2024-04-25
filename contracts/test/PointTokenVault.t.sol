@@ -35,7 +35,7 @@ contract PointTokenVaultTest is Test {
         PointTokenVaultScripts scripts = new PointTokenVaultScripts();
 
         // Deploy the PointTokenVault
-        pointTokenVault = scripts.deployPointTokenVault(address(this), "0.0.1");
+        pointTokenVault = scripts.run("0.0.1");
 
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);

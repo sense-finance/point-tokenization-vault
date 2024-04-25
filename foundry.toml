@@ -5,6 +5,7 @@ test = 'contracts/test'
 out = "contracts/out"
 libs = ["lib"]
 ffi = true
+evm_version = "cancun"
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
