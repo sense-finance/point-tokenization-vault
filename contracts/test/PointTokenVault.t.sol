@@ -471,10 +471,16 @@ contract PointTokenVaultTest is Test {
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
+        // Cannot redeem pTokens or convert rewards before redemption data is set
+        bytes32[] memory empty = new bytes32[](0);
+        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
+        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
+
         vm.prank(operator);
         pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
 
-        bytes32[] memory empty = new bytes32[](0);
         vm.prank(vitalik);
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
 
@@ -512,6 +518,35 @@ contract PointTokenVaultTest is Test {
         // Check the new balance of the PointTokenVault
         uint256 newBalance = address(pointTokenVault).balance;
         assertEq(newBalance, initialBalance + amountToSend);
+    }
+
+    function test_PTokenNotDeployed() public {
+        // Deploy new instance of vault (without pToken deployed)
+        PointTokenVault mockVault = _deployAdditionalVault();
+
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        mockVault.updateRoot(root);
+
+        // Cannot claim if pToken hasn't been deployed yet
+        vm.prank(vitalik);
+        vm.expectRevert(PointTokenVault.PTokenNotDeployed.selector);
+        mockVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+    } 
+
+    // Internal
+    function _deployAdditionalVault() internal returns (PointTokenVault mockVault) {
+        PointTokenVaultScripts scripts = new PointTokenVaultScripts();
+
+        mockVault = scripts.run("0.0.1");
+
+        mockVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
+        mockVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
+        mockVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
+        mockVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
     }
 }
 
