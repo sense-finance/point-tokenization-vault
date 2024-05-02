@@ -279,7 +279,6 @@ contract PointTokenVaultHandler is Test {
         uint256 rewardTokenIndex,
         uint256 rewardPerPToken,
         uint256 amount
-
     ) public useRandomActor(actorIndex) {
         actorIndex = bound(actorIndex, 0, 12);
         dstIndex = bound(dstIndex, 0, 12);
@@ -308,7 +307,8 @@ contract PointTokenVaultHandler is Test {
             assertEq(senderRewardTokenBalanceBefore - rewardToken.balanceOf(currentActor), amount);
             assertEq(pToken.balanceOf(actors[dstIndex].addr) - receiverPTokenBalanceBefore, pTokenAmount);
 
-            // This can be re-added when issue #x is resolved
+            // This can be re-added when issue #13 is resolved.
+            // Tests that pTokenAmount is never 0 if rewardAmount > 0
             // if (amount > 0) {
                 // assertGt(pToken.balanceOf(actors[dstIndex].addr) - receiverPTokenBalanceBefore, 0);
             // }
