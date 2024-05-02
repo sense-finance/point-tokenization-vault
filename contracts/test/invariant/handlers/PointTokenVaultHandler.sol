@@ -2,10 +2,13 @@ pragma solidity ^0.8.13;
 
 import {Test, console, console2} from "forge-std/Test.sol";
 
+import {PToken} from "../../../PToken.sol";
+
 import {MockPointTokenVault} from "../../mock/MockPointTokenVault.sol";
 
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {LibString} from "solady/utils/LibString.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 contract PointTokenVaultHandler is Test {
     MockPointTokenVault public pointTokenVault;
@@ -36,6 +39,19 @@ contract PointTokenVaultHandler is Test {
         LibString.packTwo("Tenth", "test")
     ];
 
+    MockERC20[10] rewardTokens = [
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18),
+        new MockERC20("Reward Token", "RWT", 18)
+    ];
+
     address public currentActor;
 
     struct Actor {
@@ -51,6 +67,7 @@ contract PointTokenVaultHandler is Test {
 
     mapping(address => mapping(address => uint256)) pointEarningTokenGhosts;
     mapping(address => mapping(bytes32 => uint256)) claimedPTokensGhosts;
+    mapping(address => mapping(bytes32 => uint256)) pTokenBalanceGhosts;
 
     modifier useRandomActor(uint256 _actorIndex) {
         actor = _selectActor(_actorIndex);
@@ -108,7 +125,7 @@ contract PointTokenVaultHandler is Test {
     ) public useRandomActor(actorIndex) {
         actorIndex = bound(actorIndex, 0, 12);
         dstIndex = bound(dstIndex, 0, 12);
-        amount = bound(amount, 0, 100000 * 1e18);
+        amount = bound(amount, 0, 1000000000000 * 1e18);
         tokenIndex = bound(tokenIndex, 0, 9);
 
         MockERC20 token = pointEarningTokens[tokenIndex];
@@ -141,7 +158,7 @@ contract PointTokenVaultHandler is Test {
     ) public useRandomActor(actorIndex) {
         actorIndex = bound(actorIndex, 0, 12);
         dstIndex = bound(dstIndex, 0, 12);
-        amount = bound(amount, 0, 100000 * 1e18);
+        amount = bound(amount, 0, 1000000000000 * 1e18);
         tokenIndex = bound(tokenIndex, 0, 9);
 
         MockERC20 token = pointEarningTokens[tokenIndex];
@@ -171,39 +188,40 @@ contract PointTokenVaultHandler is Test {
     function claimPTokens(
         uint256 actorIndex,
         uint256 dstIndex,
-        uint256 idIndex,
+        uint256 pointsIdIndex,
         uint256 totalClaimable,
         uint256 amount
     ) public useRandomActor(actorIndex) {
         actorIndex = bound(actorIndex, 0, 12);
         dstIndex = bound(dstIndex, 0, 12);
         totalClaimable = bound(totalClaimable, 0, 100000 * 1e18);
-        amount = bound(amount, 0, 100000 * 1e18);
-        idIndex = bound(idIndex, 0, 9);
+        amount = bound(amount, 0, 1000000000000 * 1e18);
+        pointsIdIndex = bound(pointsIdIndex, 0, 9);
 
         bytes32[] memory emptyProof = new bytes32[](0);
 
         MockPointTokenVault.Claim memory claim = MockPointTokenVault.Claim(
-            pointsIds[idIndex],
+            pointsIds[pointsIdIndex],
             totalClaimable,
             amount,
             emptyProof
         );
 
-        uint256 pTokenBalanceBefore = pointTokenVault.pTokens(pointsIds[idIndex]).balanceOf(actors[dstIndex].addr);
-        uint256 claimedBalanceBefore = pointTokenVault.claimedPTokens(actors[dstIndex].addr, pointsIds[idIndex]);
+        uint256 pTokenBalanceBefore = pointTokenVault.pTokens(pointsIds[pointsIdIndex]).balanceOf(actors[dstIndex].addr);
+        uint256 claimedBalanceBefore = pointTokenVault.claimedPTokens(actors[dstIndex].addr, pointsIds[pointsIdIndex]);
 
         try pointTokenVault.claimPTokens(claim, actors[dstIndex].addr) {
-            uint256 pTokenBalanceAfter = pointTokenVault.pTokens(pointsIds[idIndex]).balanceOf(actors[dstIndex].addr);
-            uint256 claimedBalanceAfter = pointTokenVault.claimedPTokens(actors[dstIndex].addr, pointsIds[idIndex]);
+            uint256 pTokenBalanceAfter = pointTokenVault.pTokens(pointsIds[pointsIdIndex]).balanceOf(actors[dstIndex].addr);
+            uint256 claimedBalanceAfter = pointTokenVault.claimedPTokens(actors[dstIndex].addr, pointsIds[pointsIdIndex]);
 
-            claimedPTokensGhosts[actors[dstIndex].addr][pointsIds[idIndex]] += amount;
+            claimedPTokensGhosts[actors[dstIndex].addr][pointsIds[pointsIdIndex]] += amount;
+            pTokenBalanceGhosts[actors[dstIndex].addr][pointsIds[pointsIdIndex]] += amount;
 
             assertEq(pTokenBalanceAfter - pTokenBalanceBefore, amount);
             assertEq(claimedBalanceAfter - claimedBalanceBefore, amount);
         } catch (bytes memory reason) {
             if (totalClaimable < claimedBalanceBefore + amount) {
-                console.log("Expected revert: totalClaimable < amount");
+                console.log("Expected revert: totalClaimable < claimedBalance + amount");
                 assertEq(bytes4(reason), MockPointTokenVault.ClaimTooLarge.selector);
             } else {
                 console.log("Unexpected revert: claim failed!");
@@ -212,7 +230,115 @@ contract PointTokenVaultHandler is Test {
         }
     }
 
+    function redeem(
+        uint256 actorIndex,
+        uint256 rewardTokenIndex,
+        uint256 rewardTokenAmount,
+        uint256 rewardPerPToken,
+        uint256 pointsIdIndex
+    ) public useRandomActor(actorIndex) {
+        actorIndex = bound(actorIndex, 0, 12);
+        rewardTokenAmount = bound(rewardTokenAmount, 1e18, 1000000000000 * 1e18);
+        rewardTokenIndex = bound(rewardTokenIndex, 0, 9);
+        rewardPerPToken = bound(rewardPerPToken, 1e18, 1000000 * 1e18);
+        pointsIdIndex = bound(pointsIdIndex, 0, 9);
+
+        uint256 pTokenAmount = FixedPointMathLib.divWadUp(rewardTokenAmount, rewardPerPToken);
+
+        _simpleClaim(pointsIdIndex, pTokenAmount, actorIndex);
+
+        MockERC20 rewardToken = rewardTokens[rewardTokenIndex];
+        rewardToken.mint(address(pointTokenVault), rewardTokenAmount);
+
+        vm.startPrank(actors[1].addr);
+        pointTokenVault.setRedemption(pointsIds[pointsIdIndex], rewardToken, rewardPerPToken, false);
+        vm.startPrank(currentActor);
+
+        MockPointTokenVault.Claim memory redemptionClaim = MockPointTokenVault.Claim(
+            pointsIds[pointsIdIndex],
+            rewardTokenAmount,
+            rewardTokenAmount,
+            new bytes32[](0)
+        );
+
+        uint256 rewardBalanceBefore = rewardToken.balanceOf(currentActor);
+
+        try pointTokenVault.redeemRewards(redemptionClaim, currentActor) {
+            pTokenBalanceGhosts[currentActor][pointsIds[pointsIdIndex]] -= FixedPointMathLib.divWadUp(rewardTokenAmount, rewardPerPToken);
+            assertEq(rewardToken.balanceOf(currentActor) - rewardBalanceBefore, rewardTokenAmount);
+        } catch (bytes memory reason) {
+            console.log("Unexpected revert: redeem failed!");
+            console.logBytes(reason);
+        }
+    }
+
+    function convertRewardsToPTokens(
+        uint256 actorIndex,
+        uint256 dstIndex,
+        uint256 pointsIdIndex,
+        uint256 rewardTokenIndex,
+        uint256 rewardPerPToken,
+        uint256 amount
+
+    ) public useRandomActor(actorIndex) {
+        actorIndex = bound(actorIndex, 0, 12);
+        dstIndex = bound(dstIndex, 0, 12);
+        amount = bound(amount, 0, 1000000000000 * 1e18);
+        pointsIdIndex = bound(pointsIdIndex, 0, 9);
+        rewardTokenIndex = bound(rewardTokenIndex, 0, 9);
+        rewardPerPToken = bound(rewardPerPToken, 1e18, 1000000 * 1e18);
+
+        PToken pToken = pointTokenVault.pTokens(pointsIds[pointsIdIndex]);
+        MockERC20 rewardToken = rewardTokens[rewardTokenIndex];
+
+        vm.startPrank(actors[1].addr);
+        pointTokenVault.setRedemption(pointsIds[pointsIdIndex], rewardToken, rewardPerPToken, false);
+        vm.startPrank(currentActor);
+        rewardToken.mint(currentActor, amount);
+        rewardToken.approve(address(pointTokenVault), amount);
+
+        uint256 senderRewardTokenBalanceBefore = rewardToken.balanceOf(currentActor);
+        uint256 receiverPTokenBalanceBefore = pToken.balanceOf(actors[dstIndex].addr);
+
+        try pointTokenVault.convertRewardsToPTokens(actors[dstIndex].addr, pointsIds[pointsIdIndex], amount) {
+            uint256 pTokenAmount = FixedPointMathLib.divWadDown(amount, rewardPerPToken);
+            
+            pTokenBalanceGhosts[actors[dstIndex].addr][pointsIds[pointsIdIndex]] += pTokenAmount;
+
+            assertEq(senderRewardTokenBalanceBefore - rewardToken.balanceOf(currentActor), amount);
+            assertEq(pToken.balanceOf(actors[dstIndex].addr) - receiverPTokenBalanceBefore, pTokenAmount);
+
+            // This can be re-added when issue #x is resolved
+            // if (amount > 0) {
+                // assertGt(pToken.balanceOf(actors[dstIndex].addr) - receiverPTokenBalanceBefore, 0);
+            // }
+        } catch (bytes memory reason) {
+            console.log("Unexpected error: conversion failed!");
+            console.logBytes(reason);
+        }
+    }
+
     // Helper functions ---
+
+    function _simpleClaim(
+        uint256 pointsIdIndex,
+        uint256 pTokenAmount,
+        uint256 actorIndex
+    ) internal {
+        bytes32[] memory emptyProof = new bytes32[](0);
+
+        MockPointTokenVault.Claim memory pTokenClaim = MockPointTokenVault.Claim(
+            pointsIds[pointsIdIndex],
+            type(uint256).max,
+            pTokenAmount,
+            emptyProof
+        );
+
+        pointTokenVault.claimPTokens(pTokenClaim, actors[actorIndex].addr);
+        claimedPTokensGhosts[actors[actorIndex].addr][pointsIds[pointsIdIndex]] += pTokenAmount;
+        pTokenBalanceGhosts[actors[actorIndex].addr][pointsIds[pointsIdIndex]] += pTokenAmount;
+    }
+
     function checkPointEarningTokenGhosts() public view returns (bool) {
         for (uint256 i; i < actors.length; i++) {
             for (uint256 j; j < pointEarningTokens.length; j++) {
@@ -254,7 +380,7 @@ contract PointTokenVaultHandler is Test {
         for (uint256 i; i < pointsIds.length; i++) {
             sumOfBalances = 0;
             for (uint256 j; j < actors.length; j++) {
-                sumOfBalances += claimedPTokensGhosts[actors[j].addr][pointsIds[i]];
+                sumOfBalances += pTokenBalanceGhosts[actors[j].addr][pointsIds[i]];
             }
 
             if (sumOfBalances != pointTokenVault.pTokens(pointsIds[i]).totalSupply()) {

@@ -8,7 +8,6 @@ import {MockPointTokenVaultScripts} from "../mock/script/MockPointTokenVault.s.s
 import {PointTokenVaultHandler} from "./handlers/PointTokenVaultHandler.sol";
 
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
-import {LibString} from "solady/utils/LibString.sol";
 
 contract PointTokenVaultInvariants is Test {
     PointTokenVaultHandler handler;
@@ -38,10 +37,12 @@ contract PointTokenVaultInvariants is Test {
             admins
         );
 
-        bytes4[] memory selectors = new bytes4[](3);
+        bytes4[] memory selectors = new bytes4[](5);
         selectors[0] = handler.deposit.selector;
         selectors[1] = handler.withdraw.selector;
         selectors[2] = handler.claimPTokens.selector;
+        selectors[3] = handler.redeem.selector;
+        selectors[4] = handler.convertRewardsToPTokens.selector;
 
         targetSelector(
             FuzzSelector({
