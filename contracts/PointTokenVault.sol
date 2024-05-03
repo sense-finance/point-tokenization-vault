@@ -64,7 +64,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased
     );
     event PTokenDeployed(bytes32 indexed pointsId, address indexed pToken);
-    event CapSet(address indexed token, uint256 cap);
+    event CapSet(address indexed token, uint256 prevCap, uint256 cap);
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
@@ -214,8 +214,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     function setCap(address _token, uint256 _cap) external onlyRole(OPERATOR_ROLE) {
+        uint256 prevCap = caps[_token];
         caps[_token] = _cap;
-        emit CapSet(_token, _cap);
+        emit CapSet(_token, prevCap, _cap);
     }
 
     function setIsCapped(bool _isCapped) external onlyRole(OPERATOR_ROLE) {
