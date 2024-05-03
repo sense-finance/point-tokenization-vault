@@ -60,6 +60,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
+    event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
     event RewardRedemptionSet(
         bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased
     );
@@ -170,6 +171,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);
         pTokens[_pointsId].mint(_receiver, FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken)); // Round down for mint.
+
+        emit RewardsConverted(msg.sender, _receiver, _pointsId, _amountToConvert);
     }
 
     function deployPToken(bytes32 _pointsId) public {
