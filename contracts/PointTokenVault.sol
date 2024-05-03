@@ -32,8 +32,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     // Merkle root distribution.
     bytes32 public currRoot;
     bytes32 public prevRoot;
-    mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => amount of PTokens claimed
-    mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => amount of PTokens redeemed
+    mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => PTokens claimed
+    mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => PTokens redeemed
 
     mapping(bytes32 => PToken) public pTokens; // pointsId => pTokens
 
