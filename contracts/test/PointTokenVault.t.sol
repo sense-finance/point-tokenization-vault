@@ -469,6 +469,8 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
     }
 
+    event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
+
     function test_MintPTokensForRewards() public {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
@@ -497,6 +499,8 @@ contract PointTokenVaultTest is Test {
         vm.prank(vitalik);
         rewardToken.approve(address(pointTokenVault), 1e18);
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit RewardsConverted(vitalik, vitalik, eigenPointsId, 1e18);
         pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
 
         assertEq(rewardToken.balanceOf(vitalik), 1e18);
