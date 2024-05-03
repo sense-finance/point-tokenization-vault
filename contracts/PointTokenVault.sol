@@ -26,7 +26,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
-    // Deposit asset balancess.
+    // Deposit asset balances.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
 
     // Merkle root distribution.
@@ -69,6 +69,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
     error RewardsNotReleased();
+    error CantConvertMerkleRedemption();
     error PTokenAlreadyDeployed();
     error DepositExceedsCap();
     error PTokenNotDeployed();
@@ -156,10 +157,15 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     /// @notice Mints point tokens for rewards after redemption has been enabled
     function convertRewardsToPTokens(address _receiver, bytes32 _pointsId, uint256 _amountToConvert) public {
         RedemptionParams memory params = redemptions[_pointsId];
-        (ERC20 rewardToken, uint256 rewardsPerPToken) = (params.rewardToken, params.rewardsPerPToken);
+        (ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased) =
+            (params.rewardToken, params.rewardsPerPToken, params.isMerkleBased);
 
         if (address(rewardToken) == address(0)) {
             revert RewardsNotReleased();
+        }
+
+        if (isMerkleBased) {
+            revert CantConvertMerkleRedemption();
         }
 
         rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);

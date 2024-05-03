@@ -498,6 +498,42 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
     }
 
+    function test_CantMintPTokensForRewardsMerkleBased() public {
+        bool IS_MERKLE_BASED = true;
+
+        bytes32 root = 0x409fd0e46d8453765fb513ae35a1899d667478c40233b67360023c86927eb802;
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+        proof[1] = 0xae126f1299213c869259b52ab24f7270f3cce1de54c187271c52373d8947c2fe;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+
+        rewardToken.mint(address(pointTokenVault), 3e18);
+
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, IS_MERKLE_BASED);
+
+        bytes32[] memory redemptionProof = new bytes32[](1);
+        redemptionProof[0] = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, redemptionProof), vitalik);
+
+        assertEq(rewardToken.balanceOf(vitalik), 2e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+
+        // Can't mint ptokens if it's a merkle-based redemption
+        vm.prank(vitalik);
+        rewardToken.approve(address(pointTokenVault), 1e18);
+        vm.prank(vitalik);
+        vm.expectRevert(PointTokenVault.CantConvertMerkleRedemption.selector);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
+    }
+
     function test_ReceiveETH() public payable {
         // Amount of ETH to send
         uint256 amountToSend = 1 ether;
