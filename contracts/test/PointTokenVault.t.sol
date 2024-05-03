@@ -96,6 +96,8 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.balances(vitalik, pointEarningToken), 0);
     }
 
+    event CapSet(address indexed token, uint256 prevCap, uint256 cap);
+
     function test_DepositCaps() public {
         // Deploy a new mock token
         MockERC20 newMockToken = new MockERC20("New Test Token", "NTT", 18);
@@ -103,6 +105,8 @@ contract PointTokenVaultTest is Test {
         // Set a cap for the new token
         uint256 capAmount = 1e18; // 1 token cap
         vm.prank(operator);
+        vm.expectEmit(true, true, true, true);
+        emit CapSet(address(newMockToken), 0, capAmount);
         pointTokenVault.setCap(address(newMockToken), capAmount);
 
         // Mint tokens to vitalik
