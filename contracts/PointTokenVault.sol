@@ -55,8 +55,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         bool isMerkleBased;
     }
 
-    event Deposit(address indexed receiver, address indexed token, uint256 amount);
-    event Withdraw(address indexed user, address indexed token, uint256 amount);
+    event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
+    event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
@@ -95,7 +95,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         balances[_receiver][_token] += _amount;
 
-        emit Deposit(_receiver, address(_token), _amount);
+        emit Deposit(msg.sender, _receiver, address(_token), _amount);
     }
 
     function withdraw(ERC20 _token, uint256 _amount, address _receiver) public {
@@ -103,7 +103,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         _token.safeTransfer(_receiver, _amount);
 
-        emit Withdraw(_receiver, address(_token), _amount);
+        emit Withdraw(msg.sender, _receiver, address(_token), _amount);
     }
 
     /// @notice Claims point tokens after verifying the merkle proof

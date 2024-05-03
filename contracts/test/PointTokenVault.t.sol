@@ -51,6 +51,8 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.setCap(address(pointEarningToken), type(uint256).max);
     }
 
+    event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
+
     function test_Deposit() public {
         pointEarningToken.mint(vitalik, 1.123e18);
 
@@ -65,12 +67,16 @@ contract PointTokenVaultTest is Test {
 
         // Can deposit for someone else
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit Deposit(vitalik, toly, address(pointEarningToken), 0.623e18);
         pointTokenVault.deposit(pointEarningToken, 0.623e18, toly);
 
         assertEq(pointEarningToken.balanceOf(vitalik), 0);
         assertEq(pointTokenVault.balances(toly, pointEarningToken), 0.623e18);
         assertEq(pointTokenVault.balances(vitalik, pointEarningToken), 0.5e18);
     }
+
+    event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
 
     function test_Withdraw() public {
         pointEarningToken.mint(vitalik, 1.123e18);
@@ -87,6 +93,8 @@ contract PointTokenVaultTest is Test {
 
         // Can withdraw with a different receiver
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit Withdraw(vitalik, toly, address(pointEarningToken),  0.5e18);
         pointTokenVault.withdraw(pointEarningToken, 0.5e18, toly);
 
         assertEq(pointEarningToken.balanceOf(vitalik), 0.623e18);
