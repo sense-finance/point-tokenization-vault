@@ -25,6 +25,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256("REDEMPTION_RIGHTS");
     bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+    
+    uint256 public constant MAX_UINT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     // Deposit asset balancess.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
@@ -40,7 +42,6 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(bytes32 => RedemptionParams) public redemptions; // pointsId => redemptionParams
 
     mapping(address => uint256) public caps; // asset => deposit cap
-    bool public isCapped;
 
     struct Claim {
         bytes32 pointsId;
@@ -82,13 +83,15 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         __AccessControl_init();
         __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        isCapped = true;
     }
 
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
-        if (isCapped && (_amount + _token.balanceOf(address(this)) > caps[address(_token)])) {
-            revert DepositExceedsCap();
+        uint256 cap = caps[address(_token)];
+        if (cap != MAX_UINT) {
+            if (_amount + _token.balanceOf(address(this)) > cap) {
+                revert DepositExceedsCap();
+            }
         }
 
         _token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -216,10 +219,6 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     function setCap(address _token, uint256 _cap) external onlyRole(OPERATOR_ROLE) {
         caps[_token] = _cap;
         emit CapSet(_token, _cap);
-    }
-
-    function setIsCapped(bool _isCapped) external onlyRole(OPERATOR_ROLE) {
-        isCapped = _isCapped;
     }
 
     // Can be used to unlock reward token redemption (can also modify a live redemption, so use with care).

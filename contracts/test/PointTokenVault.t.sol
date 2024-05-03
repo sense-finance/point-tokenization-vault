@@ -123,9 +123,9 @@ contract PointTokenVaultTest is Test {
 
         assertEq(pointTokenVault.balances(vitalik, newMockToken), 1e18);
 
-        // Remove the cap
+        // Set deposit cap to max
         vm.prank(operator);
-        pointTokenVault.setIsCapped(false);
+        pointTokenVault.setCap(address(newMockToken), 2**256 - 1);
 
         // Approve and deposit more than the previous cap
         vm.startPrank(vitalik);
