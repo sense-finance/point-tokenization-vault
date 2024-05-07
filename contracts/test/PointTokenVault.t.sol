@@ -94,7 +94,7 @@ contract PointTokenVaultTest is Test {
         // Can withdraw with a different receiver
         vm.prank(vitalik);
         vm.expectEmit(true, true, true, true);
-        emit Withdraw(vitalik, toly, address(pointEarningToken),  0.5e18);
+        emit Withdraw(vitalik, toly, address(pointEarningToken), 0.5e18);
         pointTokenVault.withdraw(pointEarningToken, 0.5e18, toly);
 
         assertEq(pointEarningToken.balanceOf(vitalik), 0.623e18);
@@ -548,6 +548,44 @@ contract PointTokenVaultTest is Test {
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.CantConvertMerkleRedemption.selector);
         pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
+    }
+
+    function test_CantMintPTokensForRewardsAmountTooSmall() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+
+        rewardToken.mint(address(pointTokenVault), 3e18);
+
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
+
+        bytes32[] memory empty = new bytes32[](0);
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
+
+        assertEq(rewardToken.balanceOf(vitalik), 2e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+
+        // Can't mint ptokens if the amount is too small
+        vm.prank(vitalik);
+        rewardToken.approve(address(pointTokenVault), 1);
+        vm.prank(vitalik);
+        vm.expectRevert(PointTokenVault.AmountTooSmall.selector);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1);
+
+        // Can mint anything above the absolute minimum
+        vm.prank(vitalik);
+        rewardToken.approve(address(pointTokenVault), 2);
+        vm.prank(vitalik);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 2);
     }
 
     function test_ReceiveETH() public payable {

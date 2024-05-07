@@ -74,6 +74,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     error PTokenAlreadyDeployed();
     error DepositExceedsCap();
     error PTokenNotDeployed();
+    error AmountTooSmall();
 
     constructor() {
         _disableInitializers();
@@ -170,7 +171,15 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         }
 
         rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);
-        pTokens[_pointsId].mint(_receiver, FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken)); // Round down for mint.
+
+        uint256 pTokensToMint = FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken); // Round down for mint.
+
+        // Dust guard.
+        if (pTokensToMint == 0) {
+            revert AmountTooSmall();
+        }
+
+        pTokens[_pointsId].mint(_receiver, pTokensToMint);
 
         emit RewardsConverted(msg.sender, _receiver, _pointsId, _amountToConvert);
     }
