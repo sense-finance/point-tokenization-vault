@@ -10,7 +10,7 @@ These contracts are only a piece of a larger decentralized system that will allo
 
 - PTokens are tokenized versions of points
 - They will be redeemable for rewards after rewards have been distributed
-- They will map 1:1 with the points earned by user assets depsoited into the vault
+- They will map 1:1 with the points earned by user assets deposited into the vault
 - The vault has ownership and can grant minting/burning permissions to other contracts for future system expansion
 
 ### On The Off-Chain Dependencies
