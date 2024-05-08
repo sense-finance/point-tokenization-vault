@@ -40,7 +40,6 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(bytes32 => RedemptionParams) public redemptions; // pointsId => redemptionParams
 
     mapping(address => uint256) public caps; // asset => deposit cap
-    bool public isCapped;
 
     struct Claim {
         bytes32 pointsId;
@@ -86,13 +85,16 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         __AccessControl_init();
         __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        isCapped = true;
     }
 
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
-        if (isCapped && (_amount + _token.balanceOf(address(this)) > caps[address(_token)])) {
-            revert DepositExceedsCap();
+        uint256 cap = caps[address(_token)];
+        
+        if (cap != type(uint256).max) {
+            if (_amount + _token.balanceOf(address(this)) > cap) {
+                revert DepositExceedsCap();
+            }
         }
 
         _token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -236,10 +238,6 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         uint256 prevCap = caps[_token];
         caps[_token] = _cap;
         emit CapSet(_token, prevCap, _cap);
-    }
-
-    function setIsCapped(bool _isCapped) external onlyRole(OPERATOR_ROLE) {
-        isCapped = _isCapped;
     }
 
     // Can be used to unlock reward token redemption (can also modify a live redemption, so use with care).
