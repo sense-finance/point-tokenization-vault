@@ -10,6 +10,8 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {CREATE3} from "solmate/utils/CREATE3.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+
 import {console} from "forge-std/console.sol";
 
 contract PointTokenVaultScripts is BatchScript {
@@ -55,15 +57,10 @@ contract PointTokenVaultScripts is BatchScript {
     }
 
     function run(string memory version) public returns (PointTokenVault) {
-        PointTokenVault pointTokenVaultImplementation = new PointTokenVault{salt: keccak256(abi.encode(version))}();
-
         PointTokenVault pointTokenVault = PointTokenVault(
             payable(
-                address(
-                    new ERC1967Proxy{salt: keccak256(abi.encode(version))}(
-                        address(pointTokenVaultImplementation),
-                        abi.encodeCall(PointTokenVault.initialize, (msg.sender)) // msg.sender is admin
-                    )
+                Upgrades.deployUUPSProxy(
+                    "PointTokenVault.sol", abi.encodeCall(PointTokenVault.initialize, (msg.sender))
                 )
             )
         );
@@ -89,11 +86,12 @@ contract PointTokenVaultScripts is BatchScript {
     function upgrade() public {
         vm.startBroadcast();
 
-        PointTokenVault currentPointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
+        // address currentPointTokenVaultAddress = 0xbff7Fb79efC49504afc97e74F83EE618768e63E9;
 
-        PointTokenVault PointTokenVaultImplementation = new PointTokenVault();
-
-        currentPointTokenVault.upgradeToAndCall(address(PointTokenVaultImplementation), bytes(""));
+        // Once there is a v2, upgrade referencing v1 for automatic OZ safety checks
+        // Options memory opts;
+        // opts.referenceContract = "PointTokenVaultV1.sol";
+        // Upgrades.upgradeProxy(currentPointTokenVaultAddress, "PointTokenVaultV2.sol", "");
 
         vm.stopBroadcast();
     }
