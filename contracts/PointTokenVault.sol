@@ -33,7 +33,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     bytes32 public currRoot;
     bytes32 public prevRoot;
     mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => PTokens claimed
-    mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => PTokens redeemed
+    mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => Rewards redeemed
 
     mapping(bytes32 => PToken) public pTokens; // pointsId => pTokens
 
