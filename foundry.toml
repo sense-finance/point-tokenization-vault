@@ -5,6 +5,7 @@ test = 'contracts/test'
 out = "out"
 libs = ["lib"]
 evm_version = "cancun"
+gas_reports = ["PointTokenVault"]
 ffi = true
 ast = true
 build_info = true
@@ -15,5 +16,13 @@ sepolia = "${SEPOLIA_RPC_URL}"
 
 [etherscan]
 sepolia = {key = "${ETHERSCAN_API_KEY}"}
+
+[fuzz]
+runs = 256
+
+[invariant]
+depth = 20
+fail_on_revert = true
+dictionary_weight = 60
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
