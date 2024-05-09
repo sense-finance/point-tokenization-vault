@@ -26,7 +26,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
-    // Deposit asset balancess.
+    // Deposit asset balances.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
 
     // Merkle root distribution.
@@ -40,7 +40,6 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(bytes32 => RedemptionParams) public redemptions; // pointsId => redemptionParams
 
     mapping(address => uint256) public caps; // asset => deposit cap
-    bool public isCapped;
 
     struct Claim {
         bytes32 pointsId;
@@ -55,24 +54,28 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         bool isMerkleBased;
     }
 
-    event Deposit(address indexed receiver, address indexed token, uint256 amount);
-    event Withdraw(address indexed user, address indexed token, uint256 amount);
+    event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
+    event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
+    event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
     event RewardRedemptionSet(
         bytes32 indexed pointsId, ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased
     );
     event PTokenDeployed(bytes32 indexed pointsId, address indexed pToken);
-    event CapSet(address indexed token, uint256 cap);
+    event CapSet(address indexed token, uint256 prevCap, uint256 cap);
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
     error RewardsNotReleased();
+    error CantConvertMerkleRedemption();
     error PTokenAlreadyDeployed();
     error DepositExceedsCap();
     error PTokenNotDeployed();
+    error AmountTooSmall();
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -82,20 +85,23 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         __AccessControl_init();
         __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        isCapped = true;
     }
 
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
-        if (isCapped && (_amount + _token.balanceOf(address(this)) > caps[address(_token)])) {
-            revert DepositExceedsCap();
+        uint256 cap = caps[address(_token)];
+        
+        if (cap != type(uint256).max) {
+            if (_amount + _token.balanceOf(address(this)) > cap) {
+                revert DepositExceedsCap();
+            }
         }
 
         _token.safeTransferFrom(msg.sender, address(this), _amount);
 
         balances[_receiver][_token] += _amount;
 
-        emit Deposit(_receiver, address(_token), _amount);
+        emit Deposit(msg.sender, _receiver, address(_token), _amount);
     }
 
     function withdraw(ERC20 _token, uint256 _amount, address _receiver) public {
@@ -103,7 +109,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         _token.safeTransfer(_receiver, _amount);
 
-        emit Withdraw(_receiver, address(_token), _amount);
+        emit Withdraw(msg.sender, _receiver, address(_token), _amount);
     }
 
     /// @notice Claims point tokens after verifying the merkle proof
@@ -156,14 +162,29 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     /// @notice Mints point tokens for rewards after redemption has been enabled
     function convertRewardsToPTokens(address _receiver, bytes32 _pointsId, uint256 _amountToConvert) public {
         RedemptionParams memory params = redemptions[_pointsId];
-        (ERC20 rewardToken, uint256 rewardsPerPToken) = (params.rewardToken, params.rewardsPerPToken);
+        (ERC20 rewardToken, uint256 rewardsPerPToken, bool isMerkleBased) =
+            (params.rewardToken, params.rewardsPerPToken, params.isMerkleBased);
 
         if (address(rewardToken) == address(0)) {
             revert RewardsNotReleased();
         }
 
+        if (isMerkleBased) {
+            revert CantConvertMerkleRedemption();
+        }
+
         rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);
-        pTokens[_pointsId].mint(_receiver, FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken)); // Round down for mint.
+
+        uint256 pTokensToMint = FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken); // Round down for mint.
+
+        // Dust guard.
+        if (pTokensToMint == 0) {
+            revert AmountTooSmall();
+        }
+
+        pTokens[_pointsId].mint(_receiver, pTokensToMint);
+
+        emit RewardsConverted(msg.sender, _receiver, _pointsId, _amountToConvert);
     }
 
     function deployPToken(bytes32 _pointsId) public {
@@ -214,12 +235,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     function setCap(address _token, uint256 _cap) external onlyRole(OPERATOR_ROLE) {
+        uint256 prevCap = caps[_token];
         caps[_token] = _cap;
-        emit CapSet(_token, _cap);
-    }
-
-    function setIsCapped(bool _isCapped) external onlyRole(OPERATOR_ROLE) {
-        isCapped = _isCapped;
+        emit CapSet(_token, prevCap, _cap);
     }
 
     // Can be used to unlock reward token redemption (can also modify a live redemption, so use with care).

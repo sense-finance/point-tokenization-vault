@@ -10,6 +10,8 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {CREATE3} from "solmate/utils/CREATE3.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
+
 import {console} from "forge-std/console.sol";
 
 contract PointTokenVaultScripts is BatchScript {
@@ -55,15 +57,12 @@ contract PointTokenVaultScripts is BatchScript {
     }
 
     function run(string memory version) public returns (PointTokenVault) {
-        PointTokenVault pointTokenVaultImplementation = new PointTokenVault{salt: keccak256(abi.encode(version))}();
-
-        PointTokenVault pointTokenVault = PointTokenVault(payable(
-            address(
-                new ERC1967Proxy{salt: keccak256(abi.encode(version))}(
-                    address(pointTokenVaultImplementation),
-                    abi.encodeCall(PointTokenVault.initialize, (msg.sender)) // msg.sender is admin
+        PointTokenVault pointTokenVault = PointTokenVault(
+            payable(
+                Upgrades.deployUUPSProxy(
+                    "PointTokenVault.sol", abi.encodeCall(PointTokenVault.initialize, (msg.sender))
                 )
-            ))
+            )
         );
 
         return pointTokenVault;
@@ -87,11 +86,12 @@ contract PointTokenVaultScripts is BatchScript {
     function upgrade() public {
         vm.startBroadcast();
 
-        PointTokenVault currentPointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
+        // address currentPointTokenVaultAddress = 0xbff7Fb79efC49504afc97e74F83EE618768e63E9;
 
-        PointTokenVault PointTokenVaultImplementation = new PointTokenVault();
-
-        currentPointTokenVault.upgradeToAndCall(address(PointTokenVaultImplementation), bytes(""));
+        // Once there is a v2, upgrade referencing v1 for automatic OZ safety checks
+        // Options memory opts;
+        // opts.referenceContract = "PointTokenVaultV1.sol";
+        // Upgrades.upgradeProxy(currentPointTokenVaultAddress, "PointTokenVaultV2.sol", "");
 
         vm.stopBroadcast();
     }
@@ -118,15 +118,30 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
+    // Useful for emergencies, where we need to override both the current and previous root at once
+    // For example, if minting for a specific pToken needs to be stopped, a root without any claim rights for the pToken would need to be pushed twice
+    function doublePushRoot(address pointTokenVaultAddress, bytes32 newRoot, address merkleUpdaterSafe) public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        bytes memory txn = abi.encodeWithSelector(PointTokenVault.updateRoot.selector, newRoot);
+        addToBatch(pointTokenVaultAddress, 0, txn);
+        addToBatch(pointTokenVaultAddress, 0, txn);
+
+        executeBatch(merkleUpdaterSafe, true);
+
+        vm.stopBroadcast();
+    }
+
     function setCap() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        address pointTokenVault = 0xbff7Fb79efC49504afc97e74F83EE618768e63E9;
+        address pointTokenVaultAddress = 0xbff7Fb79efC49504afc97e74F83EE618768e63E9;
 
         bytes memory txn =
             abi.encodeWithSelector(PointTokenVault.setCap.selector, 0x791a051631c9c4cDf4E03Fb7Aec3163AE164A34B, 10e18);
-        addToBatch(pointTokenVault, 0, txn);
+        addToBatch(pointTokenVaultAddress, 0, txn);
 
         executeBatch(SEOPLIA_ADMIN_SAFE, true);
         vm.stopBroadcast();

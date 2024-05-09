@@ -2,11 +2,14 @@
 src = "contracts"
 script = 'contracts/script'
 test = 'contracts/test'
-out = "contracts/out"
+out = "out"
 libs = ["lib"]
-ffi = true
 evm_version = "cancun"
 gas_reports = ["PointTokenVault"]
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"

@@ -51,6 +51,8 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.setCap(address(pointEarningToken), type(uint256).max);
     }
 
+    event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
+
     function test_Deposit() public {
         pointEarningToken.mint(vitalik, 1.123e18);
 
@@ -65,12 +67,16 @@ contract PointTokenVaultTest is Test {
 
         // Can deposit for someone else
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit Deposit(vitalik, toly, address(pointEarningToken), 0.623e18);
         pointTokenVault.deposit(pointEarningToken, 0.623e18, toly);
 
         assertEq(pointEarningToken.balanceOf(vitalik), 0);
         assertEq(pointTokenVault.balances(toly, pointEarningToken), 0.623e18);
         assertEq(pointTokenVault.balances(vitalik, pointEarningToken), 0.5e18);
     }
+
+    event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
 
     function test_Withdraw() public {
         pointEarningToken.mint(vitalik, 1.123e18);
@@ -87,6 +93,8 @@ contract PointTokenVaultTest is Test {
 
         // Can withdraw with a different receiver
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit Withdraw(vitalik, toly, address(pointEarningToken), 0.5e18);
         pointTokenVault.withdraw(pointEarningToken, 0.5e18, toly);
 
         assertEq(pointEarningToken.balanceOf(vitalik), 0.623e18);
@@ -96,6 +104,8 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.balances(vitalik, pointEarningToken), 0);
     }
 
+    event CapSet(address indexed token, uint256 prevCap, uint256 cap);
+
     function test_DepositCaps() public {
         // Deploy a new mock token
         MockERC20 newMockToken = new MockERC20("New Test Token", "NTT", 18);
@@ -103,6 +113,8 @@ contract PointTokenVaultTest is Test {
         // Set a cap for the new token
         uint256 capAmount = 1e18; // 1 token cap
         vm.prank(operator);
+        vm.expectEmit(true, true, true, true);
+        emit CapSet(address(newMockToken), 0, capAmount);
         pointTokenVault.setCap(address(newMockToken), capAmount);
 
         // Mint tokens to vitalik
@@ -123,9 +135,9 @@ contract PointTokenVaultTest is Test {
 
         assertEq(pointTokenVault.balances(vitalik, newMockToken), 1e18);
 
-        // Remove the cap
+        // Set deposit cap to max
         vm.prank(operator);
-        pointTokenVault.setIsCapped(false);
+        pointTokenVault.setCap(address(newMockToken), 2**256 - 1);
 
         // Approve and deposit more than the previous cap
         vm.startPrank(vitalik);
@@ -457,6 +469,8 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
     }
 
+    event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
+
     function test_MintPTokensForRewards() public {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
@@ -491,6 +505,8 @@ contract PointTokenVaultTest is Test {
         vm.prank(vitalik);
         rewardToken.approve(address(pointTokenVault), 1e18);
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit RewardsConverted(vitalik, vitalik, eigenPointsId, 1e18);
         pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
 
         assertEq(rewardToken.balanceOf(vitalik), 1e18);
@@ -502,6 +518,80 @@ contract PointTokenVaultTest is Test {
 
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+    }
+
+    function test_CantMintPTokensForRewardsMerkleBased() public {
+        bool IS_MERKLE_BASED = true;
+
+        bytes32 root = 0x409fd0e46d8453765fb513ae35a1899d667478c40233b67360023c86927eb802;
+
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+        proof[1] = 0xae126f1299213c869259b52ab24f7270f3cce1de54c187271c52373d8947c2fe;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+
+        rewardToken.mint(address(pointTokenVault), 3e18);
+
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, IS_MERKLE_BASED);
+
+        bytes32[] memory redemptionProof = new bytes32[](1);
+        redemptionProof[0] = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, redemptionProof), vitalik);
+
+        assertEq(rewardToken.balanceOf(vitalik), 2e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+
+        // Can't mint ptokens if it's a merkle-based redemption
+        vm.prank(vitalik);
+        rewardToken.approve(address(pointTokenVault), 1e18);
+        vm.prank(vitalik);
+        vm.expectRevert(PointTokenVault.CantConvertMerkleRedemption.selector);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
+    }
+
+    function test_CantMintPTokensForRewardsAmountTooSmall() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+
+        rewardToken.mint(address(pointTokenVault), 3e18);
+
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
+
+        bytes32[] memory empty = new bytes32[](0);
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
+
+        assertEq(rewardToken.balanceOf(vitalik), 2e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+
+        // Can't mint ptokens if the amount is too small
+        vm.prank(vitalik);
+        rewardToken.approve(address(pointTokenVault), 1);
+        vm.prank(vitalik);
+        vm.expectRevert(PointTokenVault.AmountTooSmall.selector);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1);
+
+        // Can mint anything above the absolute minimum
+        vm.prank(vitalik);
+        rewardToken.approve(address(pointTokenVault), 2);
+        vm.prank(vitalik);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 2);
     }
 
     function test_ReceiveETH() public payable {
