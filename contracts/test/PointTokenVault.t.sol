@@ -3,9 +3,11 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {PointTokenVault} from "../PointTokenVault.sol";
+import {PToken} from "../PToken.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
@@ -137,7 +139,7 @@ contract PointTokenVaultTest is Test {
 
         // Set deposit cap to max
         vm.prank(operator);
-        pointTokenVault.setCap(address(newMockToken), 2**256 - 1);
+        pointTokenVault.setCap(address(newMockToken), 2 ** 256 - 1);
 
         // Approve and deposit more than the previous cap
         vm.startPrank(vitalik);
@@ -625,7 +627,39 @@ contract PointTokenVaultTest is Test {
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.PTokenNotDeployed.selector);
         mockVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
-    } 
+    }
+
+    function test_PTokenPause() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+
+        PToken pToken = pointTokenVault.pTokens(eigenPointsId);
+
+        // Pause the pToken
+        vm.prank(operator);
+        pointTokenVault.pausePToken(eigenPointsId);
+
+        // Cannot transfer pTokens
+        vm.prank(vitalik);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        pToken.transfer(vitalik, 1e18);
+
+        // Unpause the pToken
+        vm.prank(operator);
+        pointTokenVault.unpausePToken(eigenPointsId);
+
+        // Can transfer pTokens
+        vm.prank(vitalik);
+        pToken.transfer(vitalik, 1e18);
+    }
 
     // Internal
     function _deployAdditionalVault() internal returns (PointTokenVault mockVault) {

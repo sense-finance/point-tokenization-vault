@@ -90,7 +90,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
         uint256 cap = caps[address(_token)];
-        
+
         if (cap != type(uint256).max) {
             if (_amount + _token.balanceOf(address(this)) > cap) {
                 revert DepositExceedsCap();
@@ -187,7 +187,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         emit RewardsConverted(msg.sender, _receiver, _pointsId, _amountToConvert);
     }
 
-    function deployPToken(bytes32 _pointsId) public {
+    function deployPToken(bytes32 _pointsId) public returns (PToken) {
         if (address(pTokens[_pointsId]) != address(0)) {
             revert PTokenAlreadyDeployed();
         }
@@ -195,6 +195,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
         pTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
         emit PTokenDeployed(_pointsId, address(pTokens[_pointsId]));
+
+        return pTokens[_pointsId];
     }
 
     // Internal ---
@@ -247,6 +249,14 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     {
         redemptions[_pointsId] = RedemptionParams(_rewardToken, _rewardsPerPToken, _isMerkleBased);
         emit RewardRedemptionSet(_pointsId, _rewardToken, _rewardsPerPToken, _isMerkleBased);
+    }
+
+    function pausePToken(bytes32 _pointsId) external onlyRole(OPERATOR_ROLE) {
+        pTokens[_pointsId].pause();
+    }
+
+    function unpausePToken(bytes32 _pointsId) external onlyRole(OPERATOR_ROLE) {
+        pTokens[_pointsId].unpause();
     }
 
     // To handle arbitrary reward claiming logic.
