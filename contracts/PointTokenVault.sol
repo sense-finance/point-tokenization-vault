@@ -41,6 +41,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     mapping(address => uint256) public caps; // asset => deposit cap
 
+    mapping(address => mapping(address => bool)) public trustedClaimers; // owner => delegate => trustedClaimers
+
     struct Claim {
         bytes32 pointsId;
         uint256 totalClaimable;
@@ -74,6 +76,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     error DepositExceedsCap();
     error PTokenNotDeployed();
     error AmountTooSmall();
+    error NotTrustedClaimer();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -116,7 +119,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     /// @param _claim The claim details including the merkle proof
     /// @param _account The account to claim for
     // Adapted from Morpho's RewardsDistributor.sol (https://github.com/morpho-org/morpho-optimizers/blob/ffd702f045d24b911d6c8c6c2194dd15cf9387ff/src/common/rewards-distribution/RewardsDistributor.sol)
-    function claimPTokens(Claim calldata _claim, address _account) public {
+    function claimPTokens(Claim calldata _claim, address _account, address _receiver) public {
         bytes32 pointsId = _claim.pointsId;
 
         bytes32 claimHash = keccak256(abi.encodePacked(_account, pointsId, _claim.totalClaimable));
@@ -126,9 +129,17 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             revert PTokenNotDeployed();
         }
 
-        pTokens[pointsId].mint(_account, _claim.amountToClaim);
+        if (_account != _receiver && !trustedClaimers[_account][_receiver]) {
+            revert NotTrustedClaimer();
+        }
+
+        pTokens[pointsId].mint(_receiver, _claim.amountToClaim);
 
         emit PTokensClaimed(_account, pointsId, _claim.amountToClaim);
+    }
+
+    function trustClaimer(address _account, bool _isTrusted) public {
+        trustedClaimers[msg.sender][_account] = _isTrusted;
     }
 
     /// @notice Redeems rewards for point tokens

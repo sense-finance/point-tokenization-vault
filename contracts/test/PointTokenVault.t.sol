@@ -255,27 +255,27 @@ contract PointTokenVaultTest is Test {
         // Can't claim with the wrong proof
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, badProof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, badProof), vitalik, vitalik);
 
         // Can't claim with the wrong claimable amount
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 0.9e18, 0.9e18, goodProof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 0.9e18, 0.9e18, goodProof), vitalik, vitalik);
 
         // Can't claim with the wrong pointsId
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(bytes32("123"), 1e18, 1e18, goodProof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(bytes32("123"), 1e18, 1e18, goodProof), vitalik, vitalik);
 
         // Can claim with the right proof
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik, vitalik);
 
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
 
         // Can't use the same proof twice
         vm.expectRevert(PointTokenVault.ClaimTooLarge.selector);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik, vitalik);
     }
 
     function test_DistributionTwoRecipients() public {
@@ -290,7 +290,7 @@ contract PointTokenVaultTest is Test {
 
         // Vitalik can claim
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, vitalikProof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, vitalikProof), vitalik, vitalik);
 
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
 
@@ -300,9 +300,9 @@ contract PointTokenVaultTest is Test {
         // Illia can execute toly's claim, but can only send the tokens to toly
         vm.prank(illia);
         vm.expectRevert(PointTokenVault.ProofInvalidOrExpired.selector);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), illia);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), illia, illia);
 
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), toly);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), toly, toly);
 
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(toly), 0.5e18);
     }
@@ -322,10 +322,11 @@ contract PointTokenVaultTest is Test {
 
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeCall(
-            pointTokenVault.claimPTokens, (PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, vitalikProof), vitalik)
+            pointTokenVault.claimPTokens,
+            (PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, vitalikProof), vitalik, vitalik)
         );
         calls[1] = abi.encodeCall(
-            pointTokenVault.claimPTokens, (PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), toly)
+            pointTokenVault.claimPTokens, (PointTokenVault.Claim(eigenPointsId, 0.5e18, 0.5e18, tolyProof), toly, toly)
         );
 
         pointTokenVault.multicall(calls);
@@ -362,7 +363,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.updateRoot(root);
 
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
@@ -386,7 +387,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.updateRoot(root);
 
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
@@ -423,7 +424,9 @@ contract PointTokenVaultTest is Test {
 
         // Vitalik redeems with a valid proof
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, validProofVitalikPToken), vitalik);
+        pointTokenVault.claimPTokens(
+            PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, validProofVitalikPToken), vitalik, vitalik
+        );
 
         // Redeem the tokens for rewards with the wrong proof should fail
         bytes32[] memory empty = new bytes32[](0);
@@ -455,20 +458,55 @@ contract PointTokenVaultTest is Test {
 
         // Can do a partial claim
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik, vitalik);
 
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0.5e18);
 
         // Can only claim the remainder, no more
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.ClaimTooLarge.selector);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.75e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.75e18, proof), vitalik, vitalik);
 
         // Can claim the rest
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik, vitalik);
 
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
+    }
+
+    function test_TrustedClaimer() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        // Toly tries to claim vitalik's pTokens (should fail)
+        vm.prank(toly);
+        vm.expectRevert(PointTokenVault.NotTrustedClaimer.selector);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.6e18, proof), vitalik, toly);
+
+        // Vitalik delegates claiming rights to Toly
+        vm.prank(vitalik);
+        pointTokenVault.trustClaimer(toly, true);
+
+        // Toly claims the half of Vitalik's pTokens
+        vm.prank(toly);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik, toly);
+
+        // Check balances
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(toly), 0.5e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+
+        // Vitalik claims the remaining amount for himself
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.5e18, proof), vitalik, vitalik);
+
+        // Check final balances
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(toly), 0.5e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0.5e18);
     }
 
     event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
@@ -483,7 +521,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.updateRoot(root);
 
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
@@ -535,7 +573,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.updateRoot(root);
 
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
@@ -568,7 +606,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.updateRoot(root);
 
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
 
         rewardToken.mint(address(pointTokenVault), 3e18);
 
@@ -626,7 +664,7 @@ contract PointTokenVaultTest is Test {
         // Cannot claim if pToken hasn't been deployed yet
         vm.prank(vitalik);
         vm.expectRevert(PointTokenVault.PTokenNotDeployed.selector);
-        mockVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        mockVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
     }
 
     function test_PTokenPause() public {
@@ -639,7 +677,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.updateRoot(root);
 
         vm.prank(vitalik);
-        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
 
         PToken pToken = pointTokenVault.pTokens(eigenPointsId);
 
@@ -650,7 +688,7 @@ contract PointTokenVaultTest is Test {
         // Cannot transfer pTokens
         vm.prank(vitalik);
         vm.expectRevert(Pausable.EnforcedPause.selector);
-        pToken.transfer(vitalik, 1e18);
+        pToken.transfer(toly, 1e18);
 
         // Unpause the pToken
         vm.prank(operator);
@@ -658,7 +696,7 @@ contract PointTokenVaultTest is Test {
 
         // Can transfer pTokens
         vm.prank(vitalik);
-        pToken.transfer(vitalik, 1e18);
+        pToken.transfer(toly, 1e18);
     }
 
     // Internal
