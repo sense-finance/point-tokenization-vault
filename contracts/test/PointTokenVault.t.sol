@@ -30,6 +30,7 @@ contract PointTokenVaultTest is Test {
     address admin = makeAddr("admin");
     address operator = makeAddr("operator");
     address merkleUpdater = makeAddr("merkleUpdater");
+    address feeCollector = makeAddr("feeCollector");
 
     bytes32 eigenPointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
@@ -42,6 +43,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
+        pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR(), feeCollector);
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
 
         // Deploy a mock token
@@ -403,7 +405,9 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18 - 1);
     }
 
-    event RewardsClaimed(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
+    event RewardsClaimed(
+        address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 tax
+    );
 
     function test_MerkleBasedRedemption() public {
         bytes32 root = 0x409fd0e46d8453765fb513ae35a1899d667478c40233b67360023c86927eb802;
@@ -440,7 +444,7 @@ contract PointTokenVaultTest is Test {
         // Redeem the tokens for rewards with the right proof should succeed
         vm.prank(vitalik);
         vm.expectEmit(true, true, true, true);
-        emit RewardsClaimed(vitalik, vitalik, eigenPointsId, 2e18);
+        emit RewardsClaimed(vitalik, vitalik, eigenPointsId, 2e18, 0);
         pointTokenVault.redeemRewards(
             PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, validProofVitalikRedemption), vitalik
         );
@@ -558,6 +562,123 @@ contract PointTokenVaultTest is Test {
 
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+    }
+
+    event FeesCollected(bytes32 indexed pointsId, uint256 pTokenFee, uint256 rewardTokenFee);
+
+    function test_FeeCollectionNoRedemptionFee() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        // Set mint fee to 10%
+        vm.prank(operator);
+        pointTokenVault.setMintFee(0.1e18); // 10% in WAD
+
+        // Claim pTokens
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
+
+        assertEq(pointTokenVault.pTokenFeeAcc(eigenPointsId), 0.1e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0.9e18);
+
+        // Set up redemption
+        rewardToken.mint(address(pointTokenVault), 3e18);
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
+
+        // Set redemption fee to 5%
+        vm.prank(operator);
+        pointTokenVault.setRedemptionFee(0.05e18); // 5% in WAD
+
+        // Redeem rewards
+        bytes32[] memory empty = new bytes32[](0);
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1.8e18, 1.8e18, empty), vitalik);
+
+        // Collect fees
+        vm.prank(feeCollector);
+        vm.expectEmit(true, true, true, true);
+        emit FeesCollected(eigenPointsId, 0.1e18, 0e18); // No redemption fees
+        pointTokenVault.collectFees(eigenPointsId);
+
+        // Check balances after fee collection
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(feeCollector), 0.1e18);
+        assertEq(rewardToken.balanceOf(feeCollector), 0);
+
+        // Check that fee accumulators are reset
+        assertEq(pointTokenVault.pTokenFeeAcc(eigenPointsId), 0);
+        assertEq(pointTokenVault.rewardTokenFeeAcc(eigenPointsId), 0);
+    }
+
+    function test_FeeCollectionRedemptionFee() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        // Set mint fee to 10%
+        vm.prank(operator);
+        pointTokenVault.setMintFee(0.1e18); // 10% in WAD
+
+        // Claim pTokens
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
+
+        vm.startPrank(vitalik);
+        pointTokenVault.pTokens(eigenPointsId).transfer(toly, 0.9e18);
+        vm.stopPrank();
+
+        assertEq(pointTokenVault.pTokenFeeAcc(eigenPointsId), 0.1e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(toly), 0.9e18);
+
+        // Set up redemption
+        rewardToken.mint(address(pointTokenVault), 3e18);
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
+
+        // Set redemption fee to 5%
+        vm.prank(operator);
+        pointTokenVault.setRedemptionFee(0.05e18); // 5% in WAD
+
+        // Redeem rewards
+        bytes32[] memory empty = new bytes32[](0);
+        vm.prank(toly);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1.8e18, 1.8e18, empty), toly);
+
+        // Collect fees
+        vm.prank(feeCollector);
+        vm.expectEmit(true, true, true, true);
+        emit FeesCollected(eigenPointsId, 0.1e18, 0.09e18);
+        pointTokenVault.collectFees(eigenPointsId);
+
+        // Check balances after fee collection
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(feeCollector), 0.1e18);
+        assertEq(rewardToken.balanceOf(feeCollector), 0.09e18);
+
+        // Check that fee accumulators are reset
+        assertEq(pointTokenVault.pTokenFeeAcc(eigenPointsId), 0);
+        assertEq(pointTokenVault.rewardTokenFeeAcc(eigenPointsId), 0);
+    }
+
+    function test_FeeCollectionFailsForNonCollector() public {
+        address nonCollector = address(0x5678);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, nonCollector, pointTokenVault.FEE_COLLECTOR()
+            )
+        );
+
+        vm.prank(nonCollector);
+        pointTokenVault.collectFees(eigenPointsId);
     }
 
     function test_CantMintPTokensForRewardsMerkleBased() public {
@@ -708,6 +829,7 @@ contract PointTokenVaultTest is Test {
         mockVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         mockVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
         mockVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
+        mockVault.grantRole(pointTokenVault.FEE_COLLECTOR(), feeCollector);
         mockVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
     }
 }

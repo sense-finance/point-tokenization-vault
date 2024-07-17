@@ -7,6 +7,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract PToken is ERC20, AccessControl, Pausable {
+    bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
 
@@ -14,7 +15,7 @@ contract PToken is ERC20, AccessControl, Pausable {
         ERC20(_name, _symbol, _decimals)
         AccessControl()
     {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSE_ROLE, msg.sender);
         _grantRole(MINT_ROLE, msg.sender);
         _grantRole(BURN_ROLE, msg.sender);
     }
@@ -35,11 +36,11 @@ contract PToken is ERC20, AccessControl, Pausable {
         return super.transfer(to, amount);
     }
 
-    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pause() public onlyRole(PAUSE_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpause() public onlyRole(PAUSE_ROLE) {
         _unpause();
     }
 }
