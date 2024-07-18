@@ -69,7 +69,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
     event RewardsClaimed(
-        address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 tax
+        address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee
     );
     event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
     event RewardRedemptionSet(
@@ -188,28 +188,28 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         uint256 feelesslyRedeemable = claimed - feelesslyRedeemed;
 
         uint256 rewardsToTransfer;
-        uint256 tax;
+        uint256 fee;
 
         if (feelesslyRedeemable >= pTokensToBurn) {
             // If all of the pTokens are free to redeem.
             rewardsToTransfer = amountToClaim;
             feelesslyRedeemedPTokens[msg.sender][pointsId] += pTokensToBurn;
         } else {
-            // If some or all of the pTokens are taxable.
-            uint256 pTokensToTax = pTokensToBurn - feelesslyRedeemable;
-            // Taxable pTokens are converted into rewards, and a percentage is taken based on the redemption fee.
-            tax = FixedPointMathLib.mulWadUp(
-                FixedPointMathLib.mulWadUp(pTokensToTax, params.rewardsPerPToken), redemptionFee
+            // If some or all of the pTokens are feeable.
+            uint256 pTokensToFee = pTokensToBurn - feelesslyRedeemable;
+            // Feeable pTokens are converted into rewards, and a percentage is taken based on the redemption fee.
+            fee = FixedPointMathLib.mulWadUp(
+                FixedPointMathLib.mulWadUp(pTokensToFee, params.rewardsPerPToken), redemptionFee
             );
-            rewardsToTransfer = amountToClaim - tax;
-            rewardTokenFeeAcc[pointsId] += tax;
+            rewardsToTransfer = amountToClaim - fee;
+            rewardTokenFeeAcc[pointsId] += fee;
 
             feelesslyRedeemedPTokens[msg.sender][pointsId] = claimed;
         }
 
         params.rewardToken.safeTransfer(_receiver, rewardsToTransfer);
 
-        emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardsToTransfer, tax);
+        emit RewardsClaimed(msg.sender, _receiver, pointsId, rewardsToTransfer, fee);
     }
 
     /// @notice Mints point tokens for rewards after redemption has been enabled

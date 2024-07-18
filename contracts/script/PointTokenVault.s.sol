@@ -45,6 +45,7 @@ contract PointTokenVaultScripts is BatchScript {
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), SEOPLIA_ADMIN_SAFE);
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
+        pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
 
         // Remove self
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender);
