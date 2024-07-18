@@ -185,24 +185,27 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         uint256 claimed = claimedPTokens[msg.sender][pointsId];
         uint256 feelesslyRedeemed = feelesslyRedeemedPTokens[msg.sender][pointsId];
+
+        // The amount of pTokens that are free to redeem without fee.
         uint256 feelesslyRedeemable = claimed - feelesslyRedeemed;
 
         uint256 rewardsToTransfer;
         uint256 fee;
 
         if (feelesslyRedeemable >= pTokensToBurn) {
-            // If all of the pTokens are free to redeem.
+            // If all of the pTokens are free to redeem without fee.
             rewardsToTransfer = amountToClaim;
             feelesslyRedeemedPTokens[msg.sender][pointsId] += pTokensToBurn;
         } else {
-            // If some or all of the pTokens are feeable.
+            // If some or all of the pTokens need to be charged a fee.
             uint256 pTokensToFee = pTokensToBurn - feelesslyRedeemable;
-            // Feeable pTokens are converted into rewards, and a percentage is taken based on the redemption fee.
+            // fee = amount of pTokens that are not feeless * rewardsPerPToken * redemptionFee
             fee = FixedPointMathLib.mulWadUp(
                 FixedPointMathLib.mulWadUp(pTokensToFee, params.rewardsPerPToken), redemptionFee
             );
-            rewardsToTransfer = amountToClaim - fee;
+
             rewardTokenFeeAcc[pointsId] += fee;
+            rewardsToTransfer = amountToClaim - fee;
 
             feelesslyRedeemedPTokens[msg.sender][pointsId] = claimed;
         }
@@ -323,13 +326,15 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     function collectFees(bytes32 _pointsId) external onlyRole(FEE_COLLECTOR_ROLE) {
-        uint256 pTokenFee = pTokenFeeAcc[_pointsId];
-        uint256 rewardTokenFee = rewardTokenFeeAcc[_pointsId];
+        (uint256 pTokenFee, uint256 rewardTokenFee) = (pTokenFeeAcc[_pointsId], rewardTokenFeeAcc[_pointsId]);
 
-        pTokens[_pointsId].mint(msg.sender, pTokenFee);
-        pTokenFeeAcc[_pointsId] = 0;
+        if (pTokenFee > 0) {
+            pTokens[_pointsId].mint(msg.sender, pTokenFee);
+            pTokenFeeAcc[_pointsId] = 0;
+        }
 
         if (rewardTokenFee > 0) {
+            // There will only be a positive rewardTokenFee if there are reward tokens in this contract available for transfer.
             redemptions[_pointsId].rewardToken.safeTransfer(msg.sender, rewardTokenFee);
             rewardTokenFeeAcc[_pointsId] = 0;
         }
