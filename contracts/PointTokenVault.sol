@@ -25,7 +25,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256("REDEMPTION_RIGHTS");
     bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
-    bytes32 public constant FEE_COLLECTOR = keccak256("FEE_COLLECTOR");
+    bytes32 public constant FEE_COLLECTOR_ROLE = keccak256("FEE_COLLECTOR_ROLE");
 
     // Deposit asset balances.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
@@ -322,7 +322,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         pTokens[_pointsId].unpause();
     }
 
-    function collectFees(bytes32 _pointsId) external onlyRole(FEE_COLLECTOR) {
+    function collectFees(bytes32 _pointsId) external onlyRole(FEE_COLLECTOR_ROLE) {
         uint256 pTokenFee = pTokenFeeAcc[_pointsId];
         uint256 rewardTokenFee = rewardTokenFeeAcc[_pointsId];
 

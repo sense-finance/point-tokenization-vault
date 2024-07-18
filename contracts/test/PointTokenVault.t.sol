@@ -43,7 +43,7 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
-        pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR(), feeCollector);
+        pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), feeCollector);
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
 
         // Deploy a mock token
@@ -673,7 +673,9 @@ contract PointTokenVaultTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, nonCollector, pointTokenVault.FEE_COLLECTOR()
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                nonCollector,
+                pointTokenVault.FEE_COLLECTOR_ROLE()
             )
         );
 
@@ -829,7 +831,7 @@ contract PointTokenVaultTest is Test {
         mockVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         mockVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
         mockVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
-        mockVault.grantRole(pointTokenVault.FEE_COLLECTOR(), feeCollector);
+        mockVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), feeCollector);
         mockVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
     }
 }
