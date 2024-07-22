@@ -568,6 +568,23 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
     }
 
+    event FeeCollectorSet(address feeCollector);
+    
+    function test_setFeeCollector() public {
+        vm.prank(admin);
+        vm.expectEmit(true,true,true,true);
+        emit FeeCollectorSet(toly);
+        pointTokenVault.setFeeCollector(toly);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(vitalik), pointTokenVault.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        vm.prank(vitalik);
+        pointTokenVault.setFeeCollector(vitalik);
+    }
+
     event FeesCollected(
         bytes32 indexed pointsId, address indexed feeCollector, uint256 pTokenFee, uint256 rewardTokenFee
     );
