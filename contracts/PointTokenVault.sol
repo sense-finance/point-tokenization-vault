@@ -47,8 +47,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     // Fees
     uint256 public mintFee;
     uint256 public redemptionFee;
-    mapping(bytes32 => uint256) public pTokenFeeAcc;
-    mapping(bytes32 => uint256) public rewardTokenFeeAcc;
+    mapping(bytes32 => uint256) public pTokenFeeAcc; // pTokenFeeAccumulator
+    mapping(bytes32 => uint256) public rewardTokenFeeAcc; // rewardTokenFeeAccumulator
     mapping(address => mapping(bytes32 => uint256)) public feelesslyRedeemedPTokens; // user => pointsId => feelesslyRedeemedPTokens
 
     struct Claim {
@@ -198,10 +198,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             feelesslyRedeemedPTokens[msg.sender][pointsId] += pTokensToBurn;
         } else {
             // If some or all of the pTokens need to be charged a fee.
-            uint256 pTokensToFee = pTokensToBurn - feelesslyRedeemable;
+            uint256 redeemableWithFee = pTokensToBurn - feelesslyRedeemable;
             // fee = amount of pTokens that are not feeless * rewardsPerPToken * redemptionFee
             fee = FixedPointMathLib.mulWadUp(
-                FixedPointMathLib.mulWadUp(pTokensToFee, params.rewardsPerPToken), redemptionFee
+                FixedPointMathLib.mulWadUp(redeemableWithFee, params.rewardsPerPToken), redemptionFee
             );
 
             rewardTokenFeeAcc[pointsId] += fee;
