@@ -42,6 +42,11 @@ contract PointTokenVaultTest is Test {
 
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
+
+
+
+
+
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
         pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), feeCollector);
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
