@@ -67,7 +67,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
     event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
-    event PTokensClaimed(address indexed account, bytes32 indexed pointsId, uint256 amount);
+    event PTokensClaimed(address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee);
     event RewardsClaimed(
         address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee
     );
@@ -151,7 +151,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         pTokens[pointsId].mint(_receiver, _claim.amountToClaim - pTokenFee); // Subtract mint fee.
 
-        emit PTokensClaimed(_account, pointsId, _claim.amountToClaim);
+        emit PTokensClaimed(_account, _receiver, pointsId, _claim.amountToClaim, pTokenFee);
     }
 
     function trustClaimer(address _account, bool _isTrusted) public {

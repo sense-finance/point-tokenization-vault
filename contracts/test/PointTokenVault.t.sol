@@ -242,6 +242,8 @@ contract PointTokenVaultTest is Test {
         );
     }
 
+    event PTokensClaimed(address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee);
+
     function test_Distribution() public {
         // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
         bytes32[] memory goodProof = new bytes32[](1);
@@ -271,6 +273,8 @@ contract PointTokenVaultTest is Test {
 
         // Can claim with the right proof
         vm.prank(vitalik);
+        vm.expectEmit(true, true, true, true);
+        emit PTokensClaimed(vitalik, vitalik, eigenPointsId, 1e18, 0);
         pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, goodProof), vitalik, vitalik);
 
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
