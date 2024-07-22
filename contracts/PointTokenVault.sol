@@ -83,6 +83,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event FeesCollected(
         bytes32 indexed pointsId, address indexed feeCollector, uint256 pTokenFee, uint256 rewardTokenFee
     );
+    event FeeCollectorSet(address feeCollector);
     event MintFeeSet(uint256 mintFee);
     event RedemptionFeeSet(uint256 redemptionFee);
 
@@ -106,7 +107,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         __AccessControl_init();
         __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        feeCollector = _feeCollector;
+        _setFeeCollector(_feeCollector);
     }
 
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
@@ -357,7 +358,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     function setFeeCollector(address _feeCollector) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        feeCollector = _feeCollector;
+        _setFeeCollector(_feeCollector);
     }
 
     // To handle arbitrary reward claiming logic.
@@ -372,6 +373,11 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     }
 
     function _authorizeUpgrade(address _newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    function _setFeeCollector(address _feeCollector) internal {
+        feeCollector = _feeCollector;
+        emit FeeCollectorSet(_feeCollector);
+    }
 
     receive() external payable {}
 }
