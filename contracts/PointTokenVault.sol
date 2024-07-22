@@ -207,7 +207,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             rewardTokenFeeAcc[pointsId] += fee;
             rewardsToTransfer = amountToClaim - fee;
 
-            feelesslyRedeemedPTokens[msg.sender][pointsId] = claimed;
+            if(feelesslyRedeemed != claimed){
+                feelesslyRedeemedPTokens[msg.sender][pointsId] = claimed;
+            }
         }
 
         params.rewardToken.safeTransfer(_receiver, rewardsToTransfer);
