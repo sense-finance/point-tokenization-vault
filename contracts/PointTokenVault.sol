@@ -249,10 +249,11 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         }
 
         (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
-        pTokens[_pointsId] = new PToken{salt: _pointsId}(name, symbol, 18);
-        emit PTokenDeployed(_pointsId, address(pTokens[_pointsId]));
+        PToken pToken = new PToken{salt: _pointsId}(name, symbol, 18);
+        pTokens[_pointsId] = pToken;
 
-        return pTokens[_pointsId];
+        emit PTokenDeployed(_pointsId, address(pToken));
+        return pToken;
     }
 
     // Internal ---
