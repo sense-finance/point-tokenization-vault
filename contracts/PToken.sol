@@ -8,23 +8,21 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract PToken is ERC20, AccessControl, Pausable {
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
-    bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
-    bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
+    bytes32 public constant SUPPLY_ADMIN_ROLE = keccak256("SUPPLY_ADMIN_ROLE");
 
     constructor(string memory _name, string memory _symbol, uint8 _decimals)
         ERC20(_name, _symbol, _decimals)
         AccessControl()
     {
         _grantRole(PAUSE_ROLE, msg.sender);
-        _grantRole(MINT_ROLE, msg.sender);
-        _grantRole(BURN_ROLE, msg.sender);
+        _grantRole(SUPPLY_ADMIN_ROLE, msg.sender);
     }
 
-    function mint(address to, uint256 value) public virtual onlyRole(MINT_ROLE) {
+    function mint(address to, uint256 value) public virtual onlyRole(SUPPLY_ADMIN_ROLE) {
         _mint(to, value);
     }
 
-    function burn(address from, uint256 value) public virtual onlyRole(BURN_ROLE) {
+    function burn(address from, uint256 value) public virtual onlyRole(SUPPLY_ADMIN_ROLE) {
         _burn(from, value);
     }
 
