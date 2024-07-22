@@ -31,6 +31,7 @@ contract PointTokenVaultScripts is BatchScript {
     address public MAINNET_MERKLE_UPDATER = 0xfDE9f367c933A7D7E7348D4a3e6e096d814F5828;
     address public MAINNET_OPERATOR = 0x0c0264Ba7799dA7aF0fd141ba5Ba976E6DcC6C17;
     address public MAINNET_ADMIN = 0x9D89745fD63Af482ce93a9AdB8B0BbDbb98D3e06;
+    address public FEE_COLLECTOR = MAINNET_OPERATOR; // TODO: deploy another safe for fee collection?
 
     string public VERSION = "0.0.1";
 
@@ -45,7 +46,6 @@ contract PointTokenVaultScripts is BatchScript {
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), SEOPLIA_ADMIN_SAFE);
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
-        pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
 
         // Remove self
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender);
@@ -61,7 +61,7 @@ contract PointTokenVaultScripts is BatchScript {
         PointTokenVault pointTokenVault = PointTokenVault(
             payable(
                 Upgrades.deployUUPSProxy(
-                    "PointTokenVault.sol", abi.encodeCall(PointTokenVault.initialize, (msg.sender))
+                    "PointTokenVault.sol", abi.encodeCall(PointTokenVault.initialize, (msg.sender, FEE_COLLECTOR))
                 )
             )
         );

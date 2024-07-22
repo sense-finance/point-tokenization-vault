@@ -30,7 +30,6 @@ contract PointTokenVaultTest is Test {
     address admin = makeAddr("admin");
     address operator = makeAddr("operator");
     address merkleUpdater = makeAddr("merkleUpdater");
-    address feeCollector = makeAddr("feeCollector");
 
     bytes32 eigenPointsId = LibString.packTwo("Eigen Layer Point", "pEL");
 
@@ -43,7 +42,6 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
         pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
-        pointTokenVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), feeCollector);
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
 
         // Deploy a mock token
@@ -242,7 +240,9 @@ contract PointTokenVaultTest is Test {
         );
     }
 
-    event PTokensClaimed(address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee);
+    event PTokensClaimed(
+        address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee
+    );
 
     function test_Distribution() public {
         // Merkle tree created from leaves [keccack(vitalik, pointsId, 1e18), keccack(toly, pointsId, 0.5e18)].
@@ -568,7 +568,9 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
     }
 
-    event FeesCollected(bytes32 indexed pointsId, uint256 pTokenFee, uint256 rewardTokenFee);
+    event FeesCollected(
+        bytes32 indexed pointsId, address indexed feeCollector, uint256 pTokenFee, uint256 rewardTokenFee
+    );
 
     function test_FeeCollectionNoRedemptionFee() public {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
@@ -605,14 +607,13 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1.8e18, 1.8e18, empty), vitalik);
 
         // Collect fees
-        vm.prank(feeCollector);
         vm.expectEmit(true, true, true, true);
-        emit FeesCollected(eigenPointsId, 0.1e18, 0e18); // No redemption fees
+        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0.1e18, 0e18); // No redemption fees
         pointTokenVault.collectFees(eigenPointsId);
 
         // Check balances after fee collection
-        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(feeCollector), 0.1e18);
-        assertEq(rewardToken.balanceOf(feeCollector), 0);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(pointTokenVault.feeCollector()), 0.1e18);
+        assertEq(rewardToken.balanceOf(pointTokenVault.feeCollector()), 0);
 
         // Check that fee accumulators are reset
         assertEq(pointTokenVault.pTokenFeeAcc(eigenPointsId), 0);
@@ -658,33 +659,17 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1.8e18, 1.8e18, empty), toly);
 
         // Collect fees
-        vm.prank(feeCollector);
         vm.expectEmit(true, true, true, true);
-        emit FeesCollected(eigenPointsId, 0.1e18, 0.09e18);
+        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0.1e18, 0.09e18);
         pointTokenVault.collectFees(eigenPointsId);
 
         // Check balances after fee collection
-        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(feeCollector), 0.1e18);
-        assertEq(rewardToken.balanceOf(feeCollector), 0.09e18);
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(pointTokenVault.feeCollector()), 0.1e18);
+        assertEq(rewardToken.balanceOf(pointTokenVault.feeCollector()), 0.09e18);
 
         // Check that fee accumulators are reset
         assertEq(pointTokenVault.pTokenFeeAcc(eigenPointsId), 0);
         assertEq(pointTokenVault.rewardTokenFeeAcc(eigenPointsId), 0);
-    }
-
-    function test_FeeCollectionFailsForNonCollector() public {
-        address nonCollector = address(0x5678);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                nonCollector,
-                pointTokenVault.FEE_COLLECTOR_ROLE()
-            )
-        );
-
-        vm.prank(nonCollector);
-        pointTokenVault.collectFees(eigenPointsId);
     }
 
     function test_CantMintPTokensForRewardsMerkleBased() public {
@@ -835,7 +820,6 @@ contract PointTokenVaultTest is Test {
         mockVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         mockVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
         mockVault.grantRole(pointTokenVault.OPERATOR_ROLE(), operator);
-        mockVault.grantRole(pointTokenVault.FEE_COLLECTOR_ROLE(), feeCollector);
         mockVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), address(this));
     }
 }

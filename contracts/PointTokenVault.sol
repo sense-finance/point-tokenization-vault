@@ -25,7 +25,6 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     bytes32 public constant REDEMPTION_RIGHTS_PREFIX = keccak256("REDEMPTION_RIGHTS");
     bytes32 public constant MERKLE_UPDATER_ROLE = keccak256("MERKLE_UPDATER_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
-    bytes32 public constant FEE_COLLECTOR_ROLE = keccak256("FEE_COLLECTOR_ROLE");
 
     // Deposit asset balances.
     mapping(address => mapping(ERC20 => uint256)) public balances; // user => point-earning token => balance
@@ -50,6 +49,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(bytes32 => uint256) public pTokenFeeAcc; // pTokenFeeAccumulator
     mapping(bytes32 => uint256) public rewardTokenFeeAcc; // rewardTokenFeeAccumulator
     mapping(address => mapping(bytes32 => uint256)) public feelesslyRedeemedPTokens; // user => pointsId => feelesslyRedeemedPTokens
+    address public feeCollector;
 
     struct Claim {
         bytes32 pointsId;
@@ -66,8 +66,11 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
     event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
+    event TrustClaimer(address indexed owner, address indexed delegate, bool isTrusted);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
-    event PTokensClaimed(address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee);
+    event PTokensClaimed(
+        address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee
+    );
     event RewardsClaimed(
         address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee
     );
@@ -77,7 +80,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     );
     event PTokenDeployed(bytes32 indexed pointsId, address indexed pToken);
     event CapSet(address indexed token, uint256 prevCap, uint256 cap);
-    event FeesCollected(bytes32 indexed pointsId, uint256 pTokenFee, uint256 rewardTokenFee);
+    event FeesCollected(
+        bytes32 indexed pointsId, address indexed feeCollector, uint256 pTokenFee, uint256 rewardTokenFee
+    );
     event MintFeeSet(uint256 mintFee);
     event RedemptionFeeSet(uint256 redemptionFee);
 
@@ -96,11 +101,12 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         _disableInitializers();
     }
 
-    function initialize(address _admin) public initializer {
+    function initialize(address _admin, address _feeCollector) public initializer {
         __UUPSUpgradeable_init();
         __AccessControl_init();
         __Multicall_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        feeCollector = _feeCollector;
     }
 
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
@@ -156,6 +162,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     function trustClaimer(address _account, bool _isTrusted) public {
         trustedClaimers[msg.sender][_account] = _isTrusted;
+        emit TrustClaimer(msg.sender, _account, _isTrusted);
     }
 
     /// @notice Redeems point tokens for rewards
@@ -180,7 +187,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
         }
 
-        uint256 pTokensToBurn = FixedPointMathLib.divWadUp(amountToClaim, params.rewardsPerPToken);
+        uint256 pTokensToBurn = FixedPointMathLib.divWadUp(amountToClaim, rewardsPerPToken);
         pTokens[pointsId].burn(msg.sender, pTokensToBurn);
 
         uint256 claimed = claimedPTokens[msg.sender][pointsId];
@@ -201,13 +208,13 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             uint256 redeemableWithFee = pTokensToBurn - feelesslyRedeemable;
             // fee = amount of pTokens that are not feeless * rewardsPerPToken * redemptionFee
             fee = FixedPointMathLib.mulWadUp(
-                FixedPointMathLib.mulWadUp(redeemableWithFee, params.rewardsPerPToken), redemptionFee
+                FixedPointMathLib.mulWadUp(redeemableWithFee, rewardsPerPToken), redemptionFee
             );
 
             rewardTokenFeeAcc[pointsId] += fee;
             rewardsToTransfer = amountToClaim - fee;
 
-            if(feelesslyRedeemed != claimed){
+            if (feelesslyRedeemed != claimed) {
                 feelesslyRedeemedPTokens[msg.sender][pointsId] = claimed;
             }
         }
@@ -245,17 +252,17 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         emit RewardsConverted(msg.sender, _receiver, _pointsId, _amountToConvert);
     }
 
-    function deployPToken(bytes32 _pointsId) public returns (PToken) {
+    function deployPToken(bytes32 _pointsId) public returns (PToken pToken) {
         if (address(pTokens[_pointsId]) != address(0)) {
             revert PTokenAlreadyDeployed();
         }
 
         (string memory name, string memory symbol) = LibString.unpackTwo(_pointsId); // Assume the points id was created using LibString.packTwo.
-        PToken pToken = new PToken{salt: _pointsId}(name, symbol, 18);
+        pToken = new PToken{salt: _pointsId}(name, symbol, 18);
+
         pTokens[_pointsId] = pToken;
 
         emit PTokenDeployed(_pointsId, address(pToken));
-        return pToken;
     }
 
     // Internal ---
@@ -328,21 +335,25 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         pTokens[_pointsId].unpause();
     }
 
-    function collectFees(bytes32 _pointsId) external onlyRole(FEE_COLLECTOR_ROLE) {
+    function collectFees(bytes32 _pointsId) external {
         (uint256 pTokenFee, uint256 rewardTokenFee) = (pTokenFeeAcc[_pointsId], rewardTokenFeeAcc[_pointsId]);
 
         if (pTokenFee > 0) {
-            pTokens[_pointsId].mint(msg.sender, pTokenFee);
+            pTokens[_pointsId].mint(feeCollector, pTokenFee);
             pTokenFeeAcc[_pointsId] = 0;
         }
 
         if (rewardTokenFee > 0) {
             // There will only be a positive rewardTokenFee if there are reward tokens in this contract available for transfer.
-            redemptions[_pointsId].rewardToken.safeTransfer(msg.sender, rewardTokenFee);
+            redemptions[_pointsId].rewardToken.safeTransfer(feeCollector, rewardTokenFee);
             rewardTokenFeeAcc[_pointsId] = 0;
         }
 
-        emit FeesCollected(_pointsId, pTokenFee, rewardTokenFee);
+        emit FeesCollected(_pointsId, feeCollector, pTokenFee, rewardTokenFee);
+    }
+
+    function setFeeCollector(address _feeCollector) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        feeCollector = _feeCollector;
     }
 
     // To handle arbitrary reward claiming logic.
