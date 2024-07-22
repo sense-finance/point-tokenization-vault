@@ -8,7 +8,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract PToken is ERC20, AccessControl, Pausable {
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
-    bytes32 public constant SUPPLY_ADMIN = keccak256("SUPPLY_ADMIN");
+    bytes32 public constant SUPPLY_ADMIN = keccak256("SUPPLY_ADMIN_ROLE");
 
     constructor(string memory _name, string memory _symbol, uint8 _decimals)
         ERC20(_name, _symbol, _decimals)
