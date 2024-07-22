@@ -335,6 +335,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         pTokens[_pointsId].unpause();
     }
 
+    function renouncePauseRole(bytes32 _pointsId) external onlyRole(OPERATOR_ROLE) {
+        pTokens[_pointsId].renounceRole(pTokens[_pointsId].PAUSE_ROLE(), address(this));
+    }
+
     function collectFees(bytes32 _pointsId) external {
         (uint256 pTokenFee, uint256 rewardTokenFee) = (pTokenFeeAcc[_pointsId], rewardTokenFeeAcc[_pointsId]);
 

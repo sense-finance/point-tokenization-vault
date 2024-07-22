@@ -811,6 +811,42 @@ contract PointTokenVaultTest is Test {
         pToken.transfer(toly, 1e18);
     }
 
+    function test_RenouncePauseRole() public {
+        bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
+
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = 0x6d0fcb8de12b1f57f81e49fa18b641487b932cdba4f064409fde3b05d3824ca2;
+
+        vm.prank(merkleUpdater);
+        pointTokenVault.updateRoot(root);
+
+        // Deploy pToken
+        vm.prank(vitalik);
+        pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 1e18, proof), vitalik, vitalik);
+
+        PToken pToken = pointTokenVault.pTokens(eigenPointsId);
+
+        // Check that the operator has the PAUSE_ROLE
+        assertTrue(pToken.hasRole(pToken.PAUSE_ROLE(), address(pointTokenVault)));
+
+        // Renounce the PAUSE_ROLE
+        vm.prank(operator);
+        pointTokenVault.renouncePauseRole(eigenPointsId);
+
+        // Check that the operator no longer has the PAUSE_ROLE
+        assertFalse(pToken.hasRole(pToken.PAUSE_ROLE(), address(pointTokenVault)));
+
+        // Try to pause the pToken (should fail)
+        vm.startPrank(operator);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(pointTokenVault), pToken.PAUSE_ROLE()
+            )
+        );
+        pointTokenVault.pausePToken(eigenPointsId);
+        vm.stopPrank();
+    }
+
     // Internal
     function _deployAdditionalVault() internal returns (PointTokenVault mockVault) {
         PointTokenVaultScripts scripts = new PointTokenVaultScripts();
