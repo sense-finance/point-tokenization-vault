@@ -18,11 +18,11 @@ contract PToken is ERC20, AccessControl, Pausable {
         _grantRole(SUPPLY_ADMIN_ROLE, msg.sender);
     }
 
-    function mint(address to, uint256 value) public virtual onlyRole(SUPPLY_ADMIN_ROLE) {
+    function mint(address to, uint256 value) public virtual whenNotPaused onlyRole(SUPPLY_ADMIN_ROLE) {
         _mint(to, value);
     }
 
-    function burn(address from, uint256 value) public virtual onlyRole(SUPPLY_ADMIN_ROLE) {
+    function burn(address from, uint256 value) public virtual whenNotPaused onlyRole(SUPPLY_ADMIN_ROLE) {
         _burn(from, value);
     }
 
