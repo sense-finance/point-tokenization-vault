@@ -405,6 +405,31 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18 - 1);
     }
 
+    function test_RedeemRewardsWith6DecimalToken() public {
+        // Setup a mock 6-decimal token (like USDC)
+        MockERC20 usdcReward = new MockERC20("USDC Reward", "USDC", 6);
+
+        // Mint 1,000,000 USDC to the vault
+        usdcReward.mint(address(pointTokenVault), 1_000_000 * 1e6);
+
+        // Set redemption parameters (1 pToken = 1 USDC)
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, usdcReward, 1e18, false);
+
+        // Mint 1 pToken to vitalik
+        vm.startPrank(address(pointTokenVault));
+        pointTokenVault.pTokens(eigenPointsId).mint(vitalik, 1e18);
+        vm.stopPrank();
+
+        // Vitalik redeems 1 pToken for 1 USDC
+        vm.prank(vitalik);
+        pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1e6, 1e6, new bytes32[](0)), vitalik);
+
+        // Check balances
+        assertEq(usdcReward.balanceOf(vitalik), 1e6, "Vitalik should receive 1 USDC");
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0, "Vitalik should have 0 pTokens left");
+    }
+
     event RewardsClaimed(
         address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 tax
     );
@@ -515,7 +540,7 @@ contract PointTokenVaultTest is Test {
 
     event RewardsConverted(address indexed owner, address indexed receiver, bytes32 indexed pointsId, uint256 amount);
 
-    function test_MintPTokensForRewards() public {
+    function test_ConvertRewardsToPTokens() public {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
         bytes32[] memory proof = new bytes32[](1);
@@ -562,6 +587,30 @@ contract PointTokenVaultTest is Test {
 
         assertEq(rewardToken.balanceOf(vitalik), 2e18);
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 0);
+    }
+
+    function test_ConvertRewardsToPTokensWith6DecimalToken() public {
+        // Setup a mock 6-decimal token (like USDC)
+        MockERC20 usdcReward = new MockERC20("USDC Reward", "USDC", 6);
+
+        // Mint 1,000,000 USDC to vitalik
+        usdcReward.mint(vitalik, 1_000_000 * 1e6);
+
+        // Set redemption parameters (1 pToken = 1 USDC)
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, usdcReward, 1e18, false);
+
+        // Approve USDC spend
+        vm.prank(vitalik);
+        usdcReward.approve(address(pointTokenVault), type(uint256).max);
+
+        // Vitalik converts 1 USDC to 1 pToken
+        vm.prank(vitalik);
+        pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e6);
+
+        // Check balances
+        assertEq(usdcReward.balanceOf(vitalik), 999_999 * 1e6, "Vitalik should have 999,999 USDC left");
+        assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18, "Vitalik should receive 1 pToken");
     }
 
     event FeeCollectorSet(address feeCollector);
