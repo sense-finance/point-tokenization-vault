@@ -5,16 +5,12 @@ import {Test, console} from "forge-std/Test.sol";
 import {PointTokenVault} from "../PointTokenVault.sol";
 import {PToken} from "../PToken.sol";
 
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ERC1967Utils} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
-import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
+import {MockERC20, ERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
 import {LibString} from "solady/utils/LibString.sol";
-
-import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 
 import {PointTokenVaultScripts} from "../script/PointTokenVault.s.sol";
 
@@ -535,9 +531,9 @@ contract PointTokenVaultTest is Test {
 
         // Cannot redeem pTokens or convert rewards before redemption data is set
         bytes32[] memory empty = new bytes32[](0);
-        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
+        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
-        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
+        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
         pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
 
         vm.prank(operator);
@@ -674,6 +670,17 @@ contract PointTokenVaultTest is Test {
         bytes32[] memory empty = new bytes32[](0);
         vm.prank(toly);
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1.8e18, 1.8e18, empty), toly);
+
+        // Unset redemption
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, ERC20(address(0)), 0, false);
+
+        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
+        pointTokenVault.collectFees(eigenPointsId);
+
+        // Set redemption again
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
 
         // Collect fees
         vm.expectEmit(true, true, true, true);
