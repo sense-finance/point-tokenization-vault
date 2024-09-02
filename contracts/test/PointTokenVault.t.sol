@@ -150,6 +150,47 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.balances(vitalik, newMockToken), 2e18); // Total 2 tokens deposited
     }
 
+    function test_DepositCapRewardSameAsDeposit() public {
+        // Set up an 18 decimal token as both deposit and reward token
+        MockERC20 token = new MockERC20("Example Token", "EX", 18);
+
+        vm.startPrank(operator);
+        // Set deposit cap for token to 5000
+        pointTokenVault.setCap(address(token), 5000e18);
+
+        // Set token as reward token with 1:1 ratio
+        pointTokenVault.setRedemption(eigenPointsId, token, 1e18, false);
+        vm.stopPrank();
+
+        // Mint tokens to users
+        token.mint(vitalik, 5000e18);
+        token.mint(toly, 2000e18);
+
+        // Vitalik deposits 4000 tokens
+        vm.startPrank(vitalik);
+        token.approve(address(pointTokenVault), 4000e18);
+        pointTokenVault.deposit(token, 4000e18, vitalik);
+        vm.stopPrank();
+
+        // Toly converts 2000 tokens to pTokens
+        vm.startPrank(toly);
+        token.approve(address(pointTokenVault), 2000e18);
+        pointTokenVault.convertRewardsToPTokens(toly, eigenPointsId, 2000e18);
+        vm.stopPrank();
+
+        // Assert current token balance in vault
+        assertEq(token.balanceOf(address(pointTokenVault)), 6000e18);
+
+        // Try to deposit 1000 tokens, which should succeed
+        vm.startPrank(vitalik);
+        token.approve(address(pointTokenVault), 1000e18);
+        pointTokenVault.deposit(token, 1000e18, vitalik);
+        vm.stopPrank();
+
+        // Assert that 5000 tokens have been deposited
+        assertEq(pointTokenVault.balances(vitalik, token), 5000e18);
+    }
+
     function test_DeployPToken() public {
         // Can't deploy the same token twice
         vm.expectRevert(PointTokenVault.PTokenAlreadyDeployed.selector);

@@ -43,6 +43,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     mapping(address => mapping(address => bool)) public trustedClaimers; // owner => delegate => trustedClaimers
 
+    mapping(address => uint256) public totalDeposited; // token => total deposited amount
+
     // Fees
     uint256 public mintFee;
     uint256 public redemptionFee;
@@ -115,7 +117,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         uint256 cap = caps[address(_token)];
 
         if (cap != type(uint256).max) {
-            if (_amount + _token.balanceOf(address(this)) > cap) {
+            if (totalDeposited[address(_token)] + _amount > cap) {
                 revert DepositExceedsCap();
             }
         }
@@ -123,12 +125,14 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         _token.safeTransferFrom(msg.sender, address(this), _amount);
 
         balances[_receiver][_token] += _amount;
+        totalDeposited[address(_token)] += _amount;
 
         emit Deposit(msg.sender, _receiver, address(_token), _amount);
     }
 
     function withdraw(ERC20 _token, uint256 _amount, address _receiver) public {
         balances[msg.sender][_token] -= _amount;
+        totalDeposited[address(_token)] -= _amount;
 
         _token.safeTransfer(_receiver, _amount);
 
