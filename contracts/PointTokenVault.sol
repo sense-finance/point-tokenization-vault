@@ -89,7 +89,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
-    error RewardsNotLive();
+    error RewardsNotReleased();
     error CantConvertMerkleRedemption();
     error PTokenAlreadyDeployed();
     error DepositExceedsCap();
@@ -177,7 +177,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             (params.rewardToken, params.rewardsPerPToken, params.isMerkleBased);
 
         if (address(rewardToken) == address(0)) {
-            revert RewardsNotLive();
+            revert RewardsNotReleased();
         }
 
         if (isMerkleBased) {
@@ -239,7 +239,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             (params.rewardToken, params.rewardsPerPToken, params.isMerkleBased);
 
         if (address(rewardToken) == address(0)) {
-            revert RewardsNotLive();
+            revert RewardsNotReleased();
         }
 
         if (isMerkleBased) {
@@ -357,12 +357,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         }
 
         if (rewardTokenFee > 0) {
-            ERC20 rewardToken = redemptions[_pointsId].rewardToken;
-            if (address(rewardToken) == address(0)) {
-                revert RewardsNotLive();
-            }
             // There will only be a positive rewardTokenFee if there are reward tokens in this contract available for transfer.
-            rewardToken.safeTransfer(feeCollector, rewardTokenFee);
+            redemptions[_pointsId].rewardToken.safeTransfer(feeCollector, rewardTokenFee);
             rewardTokenFeeAcc[_pointsId] = 0;
         }
 
