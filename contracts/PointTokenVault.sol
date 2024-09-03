@@ -112,7 +112,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         _setFeeCollector(_feeCollector);
     }
 
-    // Rebasing and fee-on-transfer tokens must be wrapped before depositing.
+    // Rebasing and fee-on-transfer tokens must be wrapped before depositing. ie, they are not supported natively.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
         uint256 cap = caps[address(_token)];
 
@@ -122,10 +122,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             }
         }
 
-        _token.safeTransferFrom(msg.sender, address(this), _amount);
-
         balances[_receiver][_token] += _amount;
         totalDeposited[address(_token)] += _amount;
+
+        _token.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit Deposit(msg.sender, _receiver, address(_token), _amount);
     }
