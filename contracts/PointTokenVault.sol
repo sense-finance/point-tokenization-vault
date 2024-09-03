@@ -350,12 +350,12 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         if (rewardTokenFee > 0) {
             ERC20 rewardToken = redemptions[_pointsId].rewardToken;
-            if (address(rewardToken) == address(0)) {
-                revert RewardsNotLive();
+            if (address(rewardToken) != address(0)) {
+                rewardToken.safeTransfer(feeCollector, rewardTokenFee);
+                rewardTokenFeeAcc[_pointsId] = 0;
+            } else {
+                rewardTokenFee = 0; // Do not collect reward token fees if the reward token is unset.
             }
-            // There will only be a positive rewardTokenFee if there are reward tokens in this contract available for transfer.
-            rewardToken.safeTransfer(feeCollector, rewardTokenFee);
-            rewardTokenFeeAcc[_pointsId] = 0;
         }
 
         emit FeesCollected(_pointsId, feeCollector, pTokenFee, rewardTokenFee);

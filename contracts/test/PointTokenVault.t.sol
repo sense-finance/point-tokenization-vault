@@ -565,16 +565,18 @@ contract PointTokenVaultTest is Test {
     }
 
     event FeeCollectorSet(address feeCollector);
-    
+
     function test_setFeeCollector() public {
         vm.prank(admin);
-        vm.expectEmit(true,true,true,true);
+        vm.expectEmit(true, true, true, true);
         emit FeeCollectorSet(toly);
         pointTokenVault.setFeeCollector(toly);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(vitalik), pointTokenVault.DEFAULT_ADMIN_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(vitalik),
+                pointTokenVault.DEFAULT_ADMIN_ROLE()
             )
         );
         vm.prank(vitalik);
@@ -675,8 +677,11 @@ contract PointTokenVaultTest is Test {
         vm.prank(operator);
         pointTokenVault.setRedemption(eigenPointsId, ERC20(address(0)), 0, false);
 
-        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
+        // No reward token fees are collected.
+        vm.expectEmit(true, true, true, true);
+        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0.1e18, 0);
         pointTokenVault.collectFees(eigenPointsId);
+        assertEq(rewardToken.balanceOf(pointTokenVault.feeCollector()), 0);
 
         // Set redemption again
         vm.prank(operator);
@@ -684,7 +689,7 @@ contract PointTokenVaultTest is Test {
 
         // Collect fees
         vm.expectEmit(true, true, true, true);
-        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0.1e18, 0.09e18);
+        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0, 0.09e18);
         pointTokenVault.collectFees(eigenPointsId);
 
         // Check balances after fee collection
