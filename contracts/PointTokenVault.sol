@@ -98,6 +98,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     error PTokenNotDeployed();
     error AmountTooSmall();
     error NotTrustedReceiver();
+    error ExecutionFailed(address to, bytes data);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -385,6 +386,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     {
         assembly {
             success := delegatecall(_txGas, _to, add(_data, 0x20), mload(_data), 0, 0)
+        }
+
+        if (!success) {
+            revert ExecutionFailed(_to, _data);
         }
     }
 
