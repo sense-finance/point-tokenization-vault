@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity =0.8.24;
 
 import {Test, console} from "forge-std/Test.sol";
 import {PointTokenVault} from "../PointTokenVault.sol";
@@ -569,16 +569,18 @@ contract PointTokenVaultTest is Test {
     }
 
     event FeeCollectorSet(address feeCollector);
-    
+
     function test_setFeeCollector() public {
         vm.prank(admin);
-        vm.expectEmit(true,true,true,true);
+        vm.expectEmit(true, true, true, true);
         emit FeeCollectorSet(toly);
         pointTokenVault.setFeeCollector(toly);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(vitalik), pointTokenVault.DEFAULT_ADMIN_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(vitalik),
+                pointTokenVault.DEFAULT_ADMIN_ROLE()
             )
         );
         vm.prank(vitalik);
