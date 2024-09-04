@@ -503,7 +503,7 @@ contract PointTokenVaultTest is Test {
         assertEq(pointTokenVault.pTokens(eigenPointsId).balanceOf(vitalik), 1e18);
     }
 
-    function test_TrustedClaimer() public {
+    function test_TrustedReceiver() public {
         bytes32 root = 0x4e40a10ce33f33a4786960a8bb843fe0e170b651acd83da27abc97176c4bed3c;
 
         bytes32[] memory proof = new bytes32[](1);
@@ -514,12 +514,12 @@ contract PointTokenVaultTest is Test {
 
         // Toly tries to claim vitalik's pTokens (should fail)
         vm.prank(toly);
-        vm.expectRevert(PointTokenVault.NotTrustedClaimer.selector);
+        vm.expectRevert(PointTokenVault.NotTrustedReceiver.selector);
         pointTokenVault.claimPTokens(PointTokenVault.Claim(eigenPointsId, 1e18, 0.6e18, proof), vitalik, toly);
 
         // Vitalik delegates claiming rights to Toly
         vm.prank(vitalik);
-        pointTokenVault.trustClaimer(toly, true);
+        pointTokenVault.trustReceiver(toly, true);
 
         // Toly claims the half of Vitalik's pTokens
         vm.prank(toly);

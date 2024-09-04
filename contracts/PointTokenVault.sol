@@ -41,7 +41,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     mapping(address => uint256) public caps; // asset => deposit cap
 
-    mapping(address => mapping(address => bool)) public trustedClaimers; // owner => delegate => trustedClaimers
+    mapping(address => mapping(address => bool)) public trustedReceivers; // owner => delegate => trustedReceivers
 
     // Fees
     uint256 public mintFee;
@@ -66,7 +66,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     event Deposit(address indexed depositor, address indexed receiver, address indexed token, uint256 amount);
     event Withdraw(address indexed withdrawer, address indexed receiver, address indexed token, uint256 amount);
-    event TrustClaimer(address indexed owner, address indexed delegate, bool isTrusted);
+    event TrustReceiver(address indexed owner, address indexed delegate, bool isTrusted);
     event RootUpdated(bytes32 prevRoot, bytes32 newRoot);
     event PTokensClaimed(
         address indexed account, address indexed receiver, bytes32 indexed pointsId, uint256 amount, uint256 fee
@@ -95,7 +95,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     error DepositExceedsCap();
     error PTokenNotDeployed();
     error AmountTooSmall();
-    error NotTrustedClaimer();
+    error NotTrustedReceiver();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -149,8 +149,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             revert PTokenNotDeployed();
         }
 
-        if (_account != _receiver && !trustedClaimers[_account][_receiver]) {
-            revert NotTrustedClaimer();
+        if (_account != _receiver && !trustedReceivers[_account][_receiver]) {
+            revert NotTrustedReceiver();
         }
 
         uint256 pTokenFee = FixedPointMathLib.mulWadUp(_claim.amountToClaim, mintFee);
@@ -161,9 +161,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         emit PTokensClaimed(_account, _receiver, pointsId, _claim.amountToClaim, pTokenFee);
     }
 
-    function trustClaimer(address _account, bool _isTrusted) public {
-        trustedClaimers[msg.sender][_account] = _isTrusted;
-        emit TrustClaimer(msg.sender, _account, _isTrusted);
+    function trustReceiver(address _account, bool _isTrusted) public {
+        trustedReceivers[msg.sender][_account] = _isTrusted;
+        emit TrustReceiver(msg.sender, _account, _isTrusted);
     }
 
     /// @notice Redeems point tokens for rewards
