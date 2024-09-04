@@ -556,9 +556,9 @@ contract PointTokenVaultTest is Test {
 
         // Cannot redeem pTokens or convert rewards before redemption data is set
         bytes32[] memory empty = new bytes32[](0);
-        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
+        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
-        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
+        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
         pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
 
         vm.prank(operator);
