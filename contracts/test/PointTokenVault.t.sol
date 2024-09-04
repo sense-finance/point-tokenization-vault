@@ -556,9 +556,9 @@ contract PointTokenVaultTest is Test {
 
         // Cannot redeem pTokens or convert rewards before redemption data is set
         bytes32[] memory empty = new bytes32[](0);
-        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
+        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 2e18, 2e18, empty), vitalik);
-        vm.expectRevert(PointTokenVault.RewardsNotReleased.selector);
+        vm.expectRevert(PointTokenVault.RewardsNotLive.selector);
         pointTokenVault.convertRewardsToPTokens(vitalik, eigenPointsId, 1e18);
 
         vm.prank(operator);
@@ -722,9 +722,23 @@ contract PointTokenVaultTest is Test {
         vm.prank(toly);
         pointTokenVault.redeemRewards(PointTokenVault.Claim(eigenPointsId, 1.8e18, 1.8e18, empty), toly);
 
+        // Unset redemption
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, ERC20(address(0)), 0, false);
+
+        // No reward token fees are collected.
+        vm.expectEmit(true, true, true, true);
+        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0.1e18, 0);
+        pointTokenVault.collectFees(eigenPointsId);
+        assertEq(rewardToken.balanceOf(pointTokenVault.feeCollector()), 0);
+
+        // Set redemption again
+        vm.prank(operator);
+        pointTokenVault.setRedemption(eigenPointsId, rewardToken, 2e18, false);
+
         // Collect fees
         vm.expectEmit(true, true, true, true);
-        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0.1e18, 0.09e18);
+        emit FeesCollected(eigenPointsId, pointTokenVault.feeCollector(), 0, 0.09e18);
         pointTokenVault.collectFees(eigenPointsId);
 
         // Check balances after fee collection
