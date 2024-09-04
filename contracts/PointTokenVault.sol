@@ -32,8 +32,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     // Merkle root distribution.
     bytes32 public currRoot;
     bytes32 public prevRoot;
-    mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => claimed
-    mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => claimed
+    mapping(address => mapping(bytes32 => uint256)) public claimedPTokens; // user => pointsId => PTokens claimed
+    mapping(address => mapping(bytes32 => uint256)) public claimedRedemptionRights; // user => pointsId => Rewards redeemed
 
     mapping(bytes32 => PToken) public pTokens; // pointsId => pTokens
 
@@ -188,7 +188,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
         }
 
-        uint256 pTokensToBurn = FixedPointMathLib.divWadUp(amountToClaim, rewardsPerPToken);
+        uint256 scalingFactor = 10 ** (18 - rewardToken.decimals());
+        uint256 pTokensToBurn = FixedPointMathLib.divWadUp(amountToClaim * scalingFactor, rewardsPerPToken);
+
         pTokens[pointsId].burn(msg.sender, pTokensToBurn);
 
         uint256 claimed = claimedPTokens[msg.sender][pointsId];
@@ -205,12 +207,17 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             rewardsToTransfer = amountToClaim;
             feelesslyRedeemedPTokens[msg.sender][pointsId] += pTokensToBurn;
         } else {
-            // If some or all of the pTokens need to be charged a fee.
-            uint256 redeemableWithFee = pTokensToBurn - feelesslyRedeemable;
-            // fee = amount of pTokens that are not feeless * rewardsPerPToken * redemptionFee
-            fee = FixedPointMathLib.mulWadUp(
-                FixedPointMathLib.mulWadUp(redeemableWithFee, rewardsPerPToken), redemptionFee
-            );
+            // Calculate the fee. Scope avoids stack too deep errors.
+            {
+                // If some or all of the pTokens need to be charged a fee.
+                uint256 redeemableWithFee = pTokensToBurn - feelesslyRedeemable;
+                // fee = amount of pTokens that are not feeless * rewardsPerPToken * redemptionFee
+                fee = FixedPointMathLib.mulWadUp(
+                    FixedPointMathLib.mulWadUp(redeemableWithFee, rewardsPerPToken), redemptionFee
+                );
+
+                fee = fee / scalingFactor; // Downscale to reward token decimals.
+            }
 
             rewardTokenFeeAcc[pointsId] += fee;
             rewardsToTransfer = amountToClaim - fee;
@@ -241,7 +248,8 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);
 
-        uint256 pTokensToMint = FixedPointMathLib.divWadDown(_amountToConvert, rewardsPerPToken); // Round down for mint.
+        uint256 scalingFactor = 10 ** (18 - rewardToken.decimals());
+        uint256 pTokensToMint = FixedPointMathLib.divWadDown(_amountToConvert * scalingFactor, rewardsPerPToken);
 
         // Dust guard.
         if (pTokensToMint == 0) {
