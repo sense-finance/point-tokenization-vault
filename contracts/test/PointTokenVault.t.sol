@@ -238,6 +238,17 @@ contract PointTokenVaultTest is Test {
         pointTokenVault.execute(
             address(callEcho), abi.encodeWithSelector(CallEcho.callEcho.selector, echo, "Hello"), GAS_LIMIT
         );
+
+        // Test that failed calls revert with ExecutionFailed error
+        vm.prank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PointTokenVault.ExecutionFailed.selector,
+                address(callEcho),
+                abi.encodeWithSelector(CallEcho.fail.selector)
+            )
+        );
+        pointTokenVault.execute(address(callEcho), abi.encodeWithSelector(CallEcho.fail.selector), GAS_LIMIT);
     }
 
     event PTokensClaimed(
@@ -888,5 +899,9 @@ contract Echo {
 contract CallEcho {
     function callEcho(Echo echo, string calldata message) public {
         echo.echo(message);
+    }
+
+    function fail() public pure {
+        revert("Failed");
     }
 }
