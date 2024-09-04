@@ -344,14 +344,14 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
         (uint256 pTokenFee, uint256 rewardTokenFee) = (pTokenFeeAcc[_pointsId], rewardTokenFeeAcc[_pointsId]);
 
         if (pTokenFee > 0) {
-            pTokens[_pointsId].mint(feeCollector, pTokenFee);
             pTokenFeeAcc[_pointsId] = 0;
+            pTokens[_pointsId].mint(feeCollector, pTokenFee);
         }
 
         if (rewardTokenFee > 0) {
             // There will only be a positive rewardTokenFee if there are reward tokens in this contract available for transfer.
-            redemptions[_pointsId].rewardToken.safeTransfer(feeCollector, rewardTokenFee);
             rewardTokenFeeAcc[_pointsId] = 0;
+            redemptions[_pointsId].rewardToken.safeTransfer(feeCollector, rewardTokenFee);
         }
 
         emit FeesCollected(_pointsId, feeCollector, pTokenFee, rewardTokenFee);
