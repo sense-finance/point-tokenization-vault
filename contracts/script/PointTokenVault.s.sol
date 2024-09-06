@@ -31,33 +31,32 @@ contract PointTokenVaultScripts is BatchScript {
     address public MAINNET_MERKLE_UPDATER = 0xfDE9f367c933A7D7E7348D4a3e6e096d814F5828;
     address public MAINNET_OPERATOR = 0x0c0264Ba7799dA7aF0fd141ba5Ba976E6DcC6C17;
     address public MAINNET_ADMIN = 0x9D89745fD63Af482ce93a9AdB8B0BbDbb98D3e06;
-    address public FEE_COLLECTOR = MAINNET_OPERATOR; // TODO: deploy another safe for fee collection?
-
-    string public VERSION = "0.0.1";
+    address public FEE_COLLECTOR = MAINNET_ADMIN;
 
     function run() public returns (address) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        PointTokenVault pointTokenVault = run(VERSION);
+        // Deploy implementation and proxy, return proxy
+        PointTokenVault pointTokenVault = runDeploy();
 
         // Set roles
-        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), SEOPLIA_MERKLE_BOT_SAFE);
-        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), SEOPLIA_ADMIN_SAFE);
-        pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), SEPOLIA_OPERATOR_SAFE);
+        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), MAINNET_MERKLE_UPDATER);
+        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), MAINNET_ADMIN);
+        pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), MAINNET_OPERATOR);
 
-        // Remove self
+        // Remove deployer
         pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender);
 
-        require(!pointTokenVault.hasRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender), "Self role not removed");
+        require(!pointTokenVault.hasRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender), "Deployer role not removed");
 
         vm.stopBroadcast();
 
         return address(pointTokenVault);
     }
 
-    function run(string memory version) public returns (PointTokenVault) {
+    function runDeploy() public returns (PointTokenVault) {
         PointTokenVault pointTokenVault = PointTokenVault(
             payable(
                 Upgrades.deployUUPSProxy(
