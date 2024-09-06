@@ -193,7 +193,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
             _verifyClaimAndUpdateClaimed(_claim, claimHash, msg.sender, claimedRedemptionRights);
         }
 
-        uint256 scalingFactor = 10 ** (18 - rewardToken.decimals());
+        uint256 scalingFactor = 10 ** (18 - rewardToken.decimals()); // Only tokens with 18 decimals or fewer are supported.
         uint256 pTokensToBurn = FixedPointMathLib.divWadUp(amountToClaim * scalingFactor, rewardsPerPToken);
 
         pTokens[pointsId].burn(msg.sender, pTokensToBurn);
@@ -253,7 +253,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
         rewardToken.safeTransferFrom(msg.sender, address(this), _amountToConvert);
 
-        uint256 scalingFactor = 10 ** (18 - rewardToken.decimals());
+        uint256 scalingFactor = 10 ** (18 - rewardToken.decimals()); // Only tokens with 18 decimals or fewer are supported.
         uint256 pTokensToMint = FixedPointMathLib.divWadDown(_amountToConvert * scalingFactor, rewardsPerPToken);
 
         // Dust guard.
