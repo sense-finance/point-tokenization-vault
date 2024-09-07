@@ -33,7 +33,7 @@ contract PointTokenVaultTest is Test {
         PointTokenVaultScripts scripts = new PointTokenVaultScripts();
 
         // Deploy the PointTokenVault
-        pointTokenVault = scripts.run("0.0.1");
+        pointTokenVault = scripts.runDeploy();
 
         pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
@@ -981,7 +981,7 @@ contract PointTokenVaultTest is Test {
     function _deployAdditionalVault() internal returns (PointTokenVault mockVault) {
         PointTokenVaultScripts scripts = new PointTokenVaultScripts();
 
-        mockVault = scripts.run("0.0.1");
+        mockVault = scripts.runDeploy();
 
         mockVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), admin);
         mockVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), merkleUpdater);
