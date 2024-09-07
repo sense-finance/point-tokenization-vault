@@ -34,7 +34,7 @@ contract PointTokenVaultScripts is BatchScript {
     address public FEE_COLLECTOR = MAINNET_ADMIN;
 
     function run() public returns (address) {
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
 
