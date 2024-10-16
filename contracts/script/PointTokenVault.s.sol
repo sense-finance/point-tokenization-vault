@@ -124,10 +124,10 @@ contract PointTokenVaultScripts is BatchScript {
 
         bytes32 POINTS_ID_ETHENA_SATS_S2 = LibString.packTwo("Rumpel kPt: Ethena S2", "kpSATS-2");
         ERC20 ENA = ERC20(0x57e114B691Db790C35207b2e685D4A43181e6061);
-        uint256 EXCHANGE_RATE = 2e18;
+        uint256 REWARDS_PER_P_TOKEN = 63381137368827226;
         bool REDEMPTION_RIGHTS = true;
 
-        pointTokenVault.setRedemption(POINTS_ID_ETHENA_SATS_S2, ENA, EXCHANGE_RATE, REDEMPTION_RIGHTS);
+        pointTokenVault.setRedemption(POINTS_ID_ETHENA_SATS_S2, ENA, REWARDS_PER_P_TOKEN, REDEMPTION_RIGHTS);
 
         // bytes32 MERKLE_ROOT_WIT_REDEMPTION_RIGHTS = 0x882aaf07b6b16e5f021a498e1a8c5de540e6ffe9345fdc48b51dd79dc894a059;
 
