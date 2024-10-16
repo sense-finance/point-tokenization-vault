@@ -118,6 +118,22 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
+    function setRedemptionENA18Oct24() public {
+        address POINT_TOKEN_VAULT_PROXY_V_0_1_0 = 0x1EeEBa76f211C4Dce994b9c5A74BDF25DB649Fa1;
+        PointTokenVault pointTokenVault = PointTokenVault(payable(POINT_TOKEN_VAULT_PROXY_V_0_1_0));
+
+        bytes32 POINTS_ID_ETHENA_SATS_S2 = LibString.packTwo("Rumpel kPt: Ethena S2", "kpSATS-2");
+        ERC20 ENA = ERC20(0x57e114B691Db790C35207b2e685D4A43181e6061);
+        uint256 EXCHANGE_RATE = 2e18;
+        bool REDEMPTION_RIGHTS = true;
+
+        pointTokenVault.setRedemption(POINTS_ID_ETHENA_SATS_S2, ENA, EXCHANGE_RATE, REDEMPTION_RIGHTS);
+
+        // bytes32 MERKLE_ROOT_WIT_REDEMPTION_RIGHTS = 0x882aaf07b6b16e5f021a498e1a8c5de540e6ffe9345fdc48b51dd79dc894a059;
+
+        // pointTokenVault.updateRoot(MERKLE_ROOT_WIT_REDEMPTION_RIGHTS);
+    }
+
     // Useful for emergencies, where we need to override both the current and previous root at once
     // For example, if minting for a specific pToken needs to be stopped, a root without any claim rights for the pToken would need to be pushed twice
     function doublePushRoot(address pointTokenVaultAddress, bytes32 newRoot, address merkleUpdaterSafe) public {
