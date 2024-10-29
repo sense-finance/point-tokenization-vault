@@ -9,11 +9,13 @@ import {
   Address,
   zeroAddress,
   PublicClient,
+  getContract,
+  erc20Abi,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { MerkleTree } from "merkletreejs";
 
-// Core types
+// Types
 type PointsBalance = Map<`0x${string}`, bigint>;
 type RedemptionRightsMap = Map<Address, PointsBalance>;
 
@@ -48,15 +50,22 @@ interface MerklizedData {
 }
 
 interface PTokenSnapshot {
+  address: Address;
   blockNumber: string;
   balances: {
-    [address: string]: string; // Using string for BigInt serialization
+    [address: string]: string;
   };
 }
 
-// TODO: account for LPs
+// Overrides
+const UNI_POOL_OVERRIDES = {
+  "0x597a1b0515bbeEe6796B89a6f403c3fD41BB626C": {
+    "0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D": 6487631537430741114,
+    "0x44Cb2d713BDa3858001f038645fD05E23E5DE03D": 27597767454066598826095,
+  },
+};
 
-// Load config
+// Config
 dotenv.config({ path: "./js-scripts/generateRedemptionRights/.env" });
 const config = {
   rpcUrl: process.env.MAINNET_RPC_URL,
@@ -64,16 +73,19 @@ const config = {
     ","
   ) as Address[],
   pointsIds: (process.env.POINTS_IDS as string)?.split(",") as `0x${string}`[],
-  rewardsPerPToken: process.env.REWARDS_PER_P_TOKEN as string,
+  rewardsPerPToken: (process.env.REWARDS_PER_P_TOKEN as string)?.split(
+    ","
+  ) as string[],
 };
 
 // Core functions
 async function calculateRedemptionRights(
   client: PublicClient,
-  pTokenAddress: Address
+  pTokenAddress: Address,
+  rewardsMultiplier: string
 ): Promise<[Map<Address, bigint>, PTokenSnapshot]> {
   const redemptionRights = new Map<Address, bigint>();
-  const rewardsMultiplier = BigInt(config.rewardsPerPToken);
+  const rewardsMultiplierBigInt = BigInt(rewardsMultiplier);
   const blockNumber = await client.getBlockNumber();
 
   const logs = await client.getLogs({
@@ -96,7 +108,7 @@ async function calculateRedemptionRights(
       redemptionRights.set(
         from,
         (redemptionRights.get(from) || 0n) -
-          (value * rewardsMultiplier) / BigInt(1e18)
+          (value * rewardsMultiplierBigInt) / BigInt(1e18)
       );
       pTokenBalances.set(from, (pTokenBalances.get(from) || 0n) - value);
     }
@@ -104,14 +116,44 @@ async function calculateRedemptionRights(
       redemptionRights.set(
         to,
         (redemptionRights.get(to) || 0n) +
-          (value * rewardsMultiplier) / BigInt(1e18)
+          (value * rewardsMultiplierBigInt) / BigInt(1e18)
       );
       pTokenBalances.set(to, (pTokenBalances.get(to) || 0n) + value);
     }
   }
 
+  // Apply UNI pool overrides after processing all transfers
+  for (const [poolAddress, redistributions] of Object.entries(
+    UNI_POOL_OVERRIDES
+  )) {
+    const poolBalance = pTokenBalances.get(poolAddress as Address) || 0n;
+    if (poolBalance > 0n) {
+      // Remove balance from pool
+      pTokenBalances.set(poolAddress as Address, 0n);
+      redemptionRights.set(poolAddress as Address, 0n);
+
+      // Redistribute to specified addresses
+      for (const [recipient, amount] of Object.entries(redistributions)) {
+        const recipientAddress = recipient as Address;
+        const overrideAmount = BigInt(amount);
+
+        pTokenBalances.set(
+          recipientAddress,
+          (pTokenBalances.get(recipientAddress) || 0n) + overrideAmount
+        );
+
+        redemptionRights.set(
+          recipientAddress,
+          (redemptionRights.get(recipientAddress) || 0n) +
+            (overrideAmount * rewardsMultiplierBigInt) / BigInt(1e18)
+        );
+      }
+    }
+  }
+
   // Create snapshot object
   const snapshot: PTokenSnapshot = {
+    address: pTokenAddress,
     blockNumber: blockNumber.toString(),
     balances: Object.fromEntries(
       Array.from(pTokenBalances.entries())
@@ -131,13 +173,13 @@ async function calculateRedemptionRights(
 }
 
 function generateMerkleData(
-  allRights: RedemptionRightsMap,
+  allRedemptionRights: RedemptionRightsMap,
   previousDistribution: AlphaDistributionData
 ): MerklizedData {
   const prefix = keccak256(encodePacked(["string"], ["REDEMPTION_RIGHTS"]));
 
-  // Generate leaves
-  const rightsLeaves = Array.from(allRights.entries()).flatMap(
+  // Generate redemption rights leaves
+  const rightsLeaves = Array.from(allRedemptionRights.entries()).flatMap(
     ([address, balances]) =>
       Array.from(balances.entries()).map(([pointsId, balance]) =>
         keccak256(
@@ -149,6 +191,7 @@ function generateMerkleData(
       )
   );
 
+  // Generate pTokens leaves
   const pTokenLeaves = Object.entries(previousDistribution.pTokens).flatMap(
     ([address, pointsData]) =>
       Object.entries(pointsData).map(([pointsId, data]) =>
@@ -175,8 +218,8 @@ function generateMerkleData(
   return {
     root: tree.getHexRoot() as `0x${string}`,
     redemptionRights: Object.fromEntries(
-      Array.from(allRights.entries()).map(([addr, balances]) => [
-        addr,
+      Array.from(allRedemptionRights.entries()).map(([address, balances]) => [
+        address,
         Object.fromEntries(
           Array.from(balances.entries()).map(([pointsId, balance]) => [
             pointsId,
@@ -186,7 +229,7 @@ function generateMerkleData(
                 keccak256(
                   encodePacked(
                     ["bytes32", "address", "bytes32", "uint256"],
-                    [prefix, addr, pointsId, balance]
+                    [prefix, address, pointsId, balance]
                   )
                 )
               ) as `0x${string}`[],
@@ -196,29 +239,31 @@ function generateMerkleData(
       ])
     ),
     pTokens: Object.fromEntries(
-      Object.entries(previousDistribution.pTokens).map(([addr, pointsData]) => [
-        addr,
-        Object.fromEntries(
-          Object.entries(pointsData).map(([pointsId, data]) => [
-            pointsId,
-            {
-              amount: data.accumulatingPoints,
-              proof: tree.getHexProof(
-                keccak256(
-                  encodePacked(
-                    ["address", "bytes32", "uint256"],
-                    [
-                      addr as Address,
-                      pointsId as `0x${string}`,
-                      BigInt(data.accumulatingPoints),
-                    ]
+      Object.entries(previousDistribution.pTokens).map(
+        ([address, pointsData]) => [
+          address,
+          Object.fromEntries(
+            Object.entries(pointsData).map(([pointsId, data]) => [
+              pointsId,
+              {
+                amount: data.accumulatingPoints,
+                proof: tree.getHexProof(
+                  keccak256(
+                    encodePacked(
+                      ["address", "bytes32", "uint256"],
+                      [
+                        address as Address,
+                        pointsId as `0x${string}`,
+                        BigInt(data.accumulatingPoints),
+                      ]
+                    )
                   )
-                )
-              ) as `0x${string}`[],
-            },
-          ])
-        ),
-      ])
+                ) as `0x${string}`[],
+              },
+            ])
+          ),
+        ]
+      )
     ),
   };
 }
@@ -230,7 +275,7 @@ async function generateMerkleTree(): Promise<void> {
     transport: http(config.rpcUrl),
   });
 
-  // Validate inputs
+  // Validate config
   if (
     !config.rpcUrl ||
     !config.pTokenAddresses.length ||
@@ -243,27 +288,46 @@ async function generateMerkleTree(): Promise<void> {
   console.log(`Processing at block #${await client.getBlockNumber()}`);
 
   // Calculate rights for each token
-  const allRights: RedemptionRightsMap = new Map();
+  const allRedemptionRights: RedemptionRightsMap = new Map();
   const snapshots: { [address: string]: PTokenSnapshot } = {};
 
   for (let i = 0; i < config.pTokenAddresses.length; i++) {
     const [rights, snapshot] = await calculateRedemptionRights(
       client,
-      config.pTokenAddresses[i]
+      config.pTokenAddresses[i],
+      config.rewardsPerPToken[i]
     );
     snapshots[config.pTokenAddresses[i]] = snapshot;
 
     for (const [addr, balance] of rights.entries()) {
-      if (!allRights.has(addr)) allRights.set(addr, new Map());
-      allRights.get(addr)!.set(config.pointsIds[i], balance);
+      if (!allRedemptionRights.has(addr))
+        allRedemptionRights.set(addr, new Map());
+      allRedemptionRights.get(addr)!.set(config.pointsIds[i], balance);
     }
   }
 
-  // Save snapshots
-  fs.writeFileSync(
-    "js-scripts/generateRedemptionRights/out/ptoken-snapshots.json",
-    JSON.stringify(snapshots, null, 2)
-  );
+  // Save individual snapshots for each pToken
+  for (const [pTokenAddress, snapshot] of Object.entries(snapshots)) {
+    const pTokenContract = getContract({
+      address: pTokenAddress as Address,
+      abi: erc20Abi,
+      client,
+    });
+
+    const symbol = await pTokenContract.read.symbol();
+    const fileName = `ptoken-snapshot-${symbol.toLowerCase()}.json`;
+
+    // Add address to the snapshot data
+    const snapshotWithAddress: PTokenSnapshot = {
+      address: pTokenAddress as Address,
+      ...snapshot,
+    };
+
+    fs.writeFileSync(
+      `js-scripts/generateRedemptionRights/out/${fileName}`,
+      JSON.stringify(snapshotWithAddress, null, 2)
+    );
+  }
 
   // Generate merkle data
   const previousDistribution = JSON.parse(
@@ -273,7 +337,10 @@ async function generateMerkleTree(): Promise<void> {
     )
   ) as AlphaDistributionData;
 
-  const merklizedData = generateMerkleData(allRights, previousDistribution);
+  const merklizedData = generateMerkleData(
+    allRedemptionRights,
+    previousDistribution
+  );
 
   console.log("Merkle root:", merklizedData.root);
   fs.writeFileSync(
