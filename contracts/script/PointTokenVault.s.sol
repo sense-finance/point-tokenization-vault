@@ -4,12 +4,11 @@ pragma solidity =0.8.24;
 import {BatchScript} from "forge-safe/src/BatchScript.sol";
 
 import {PointTokenVault} from "../PointTokenVault.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {CREATE3} from "solmate/utils/CREATE3.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 import {console} from "forge-std/console.sol";
@@ -97,11 +96,12 @@ contract PointTokenVaultScripts is BatchScript {
     }
 
     function deployPToken() public {
-        vm.startBroadcast(JIM_PRIVATE_KEY);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
 
-        PointTokenVault pointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
+        PointTokenVault pointTokenVault = PointTokenVault(payable(0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61));
 
-        pointTokenVault.deployPToken(LibString.packTwo("ETHERFI Points", "pEF"));
+        pointTokenVault.deployPToken(LibString.packTwo("Rumpel kPt: ETHERFI S4", "kpEF-4"));
 
         vm.stopBroadcast();
     }
@@ -118,20 +118,36 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
-    function setRedemptionENA18Oct24() public {
-        address POINT_TOKEN_VAULT_PROXY_V_0_1_0 = 0x1EeEBa76f211C4Dce994b9c5A74BDF25DB649Fa1;
-        PointTokenVault pointTokenVault = PointTokenVault(payable(POINT_TOKEN_VAULT_PROXY_V_0_1_0));
+    function setRedemptionENA30Oct24() public {
+        // Core contract and token setup
+        PointTokenVault vaultV0_1_0 = PointTokenVault(payable(0x1EeEBa76f211C4Dce994b9c5A74BDF25DB649Fa1));
+        bytes32 pointsId = LibString.packTwo("Rumpel kPoint: Ethena S2", "kpSATS");
+        ERC20 senaToken = ERC20(0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9);
+        uint256 rewardsPerPToken = 63381137368827226;
 
-        bytes32 POINTS_ID_ETHENA_SATS_S2 = LibString.packTwo("Rumpel kPt: Ethena S2", "kpSATS-2");
-        ERC20 ENA = ERC20(0x57e114B691Db790C35207b2e685D4A43181e6061);
-        uint256 REWARDS_PER_P_TOKEN = 63381137368827226;
-        bool REDEMPTION_RIGHTS = true;
+        // Set redemption parameters
+        vm.startBroadcast(MAINNET_OPERATOR);
+        vaultV0_1_0.setRedemption(pointsId, senaToken, rewardsPerPToken, true);
+        vm.stopBroadcast();
 
-        pointTokenVault.setRedemption(POINTS_ID_ETHENA_SATS_S2, ENA, REWARDS_PER_P_TOKEN, REDEMPTION_RIGHTS);
+        // Update merkle root
+        vm.startBroadcast(MAINNET_MERKLE_UPDATER);
+        vaultV0_1_0.updateRoot(0x602cdd6dd4f1c6f7bb049ce8b23a49e5177dc84830c7f00cc09eb0f11f03d9be);
+        vm.stopBroadcast();
 
-        // bytes32 MERKLE_ROOT_WIT_REDEMPTION_RIGHTS = 0x882aaf07b6b16e5f021a498e1a8c5de540e6ffe9345fdc48b51dd79dc894a059;
+        // Test redemption
+        bytes32[] memory proof = new bytes32[](5);
+        proof[0] = 0xc1a70bb7d5c4ddf647114cb36083bca867a80e37e187aa1d6705f3b12357d7cf;
+        proof[1] = 0x04a635b0e5b8e5ac70059fb9dc2682f5102a3b4a2f8b2c0d6f1ea43b1e04272f;
+        proof[2] = 0xab802966e4277e85c878dad4c849c7632735a56c3710c197470de81707286069;
+        proof[3] = 0x7c0bd8bd630d01f1a459f6cd963cfc5f58487dec582339b1d8f29edbbd41d8ab;
+        proof[4] = 0x0fe239692610c805880a540ea359a0f3f8314f94bb95cd4ec53d712ae6cdc63d;
 
-        // pointTokenVault.updateRoot(MERKLE_ROOT_WIT_REDEMPTION_RIGHTS);
+        address testUser = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
+        uint256 claimAmount = 52792622186481736164;
+
+        vm.prank(testUser);
+        vaultV0_1_0.redeemRewards(PointTokenVault.Claim(pointsId, claimAmount, claimAmount, proof), testUser);
     }
 
     // Useful for emergencies, where we need to override both the current and previous root at once
