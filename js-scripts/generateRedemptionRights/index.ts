@@ -319,8 +319,8 @@ async function generateMerkleTree(): Promise<void> {
 
     // Add address to the snapshot data
     const snapshotWithAddress: PTokenSnapshot = {
-      address: pTokenAddress as Address,
       ...snapshot,
+      address: pTokenAddress as Address,
     };
 
     fs.writeFileSync(
