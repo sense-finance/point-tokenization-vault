@@ -124,10 +124,11 @@ contract PointTokenVaultScripts is BatchScript {
         bytes32 pointsId = LibString.packTwo("Rumpel kPoint: Ethena S2", "kpSATS");
         ERC20 senaToken = ERC20(0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9);
         uint256 rewardsPerPToken = 63381137368827226;
+        bool usesRedemptionRights = true;
 
         // Set redemption parameters
         vm.startBroadcast(MAINNET_OPERATOR);
-        vaultV0_1_0.setRedemption(pointsId, senaToken, rewardsPerPToken, true);
+        vaultV0_1_0.setRedemption(pointsId, senaToken, rewardsPerPToken, usesRedemptionRights);
         vm.stopBroadcast();
 
         // Update merkle root
