@@ -47,6 +47,15 @@ interface MerklizedData {
   };
 }
 
+interface PTokenSnapshot {
+  blockNumber: string;
+  balances: {
+    [address: string]: string; // Using string for BigInt serialization
+  };
+}
+
+// TODO: account for LPs
+
 // Load config
 dotenv.config({ path: "./js-scripts/generateRedemptionRights/.env" });
 const config = {
@@ -62,9 +71,10 @@ const config = {
 async function calculateRedemptionRights(
   client: PublicClient,
   pTokenAddress: Address
-): Promise<Map<Address, bigint>> {
+): Promise<[Map<Address, bigint>, PTokenSnapshot]> {
   const redemptionRights = new Map<Address, bigint>();
   const rewardsMultiplier = BigInt(config.rewardsPerPToken);
+  const blockNumber = await client.getBlockNumber();
 
   const logs = await client.getLogs({
     address: pTokenAddress,
@@ -75,15 +85,20 @@ async function calculateRedemptionRights(
     toBlock: "latest",
   });
 
+  // Track raw pToken balances separately
+  const pTokenBalances = new Map<Address, bigint>();
+
   for (const log of logs) {
     const [from, to, value] = log.args as [Address, Address, bigint];
 
+    // Update redemption rights
     if (from !== zeroAddress) {
       redemptionRights.set(
         from,
         (redemptionRights.get(from) || 0n) -
           (value * rewardsMultiplier) / BigInt(1e18)
       );
+      pTokenBalances.set(from, (pTokenBalances.get(from) || 0n) - value);
     }
     if (to !== zeroAddress) {
       redemptionRights.set(
@@ -91,14 +106,28 @@ async function calculateRedemptionRights(
         (redemptionRights.get(to) || 0n) +
           (value * rewardsMultiplier) / BigInt(1e18)
       );
+      pTokenBalances.set(to, (pTokenBalances.get(to) || 0n) + value);
     }
   }
 
-  return new Map(
-    Array.from(redemptionRights.entries()).filter(
-      ([_, balance]) => balance > 0n
-    )
-  );
+  // Create snapshot object
+  const snapshot: PTokenSnapshot = {
+    blockNumber: blockNumber.toString(),
+    balances: Object.fromEntries(
+      Array.from(pTokenBalances.entries())
+        .filter(([_, balance]) => balance > 0n)
+        .map(([addr, balance]) => [addr, balance.toString()])
+    ),
+  };
+
+  return [
+    new Map(
+      Array.from(redemptionRights.entries()).filter(
+        ([_, balance]) => balance > 0n
+      )
+    ),
+    snapshot,
+  ];
 }
 
 function generateMerkleData(
@@ -215,16 +244,26 @@ async function generateMerkleTree(): Promise<void> {
 
   // Calculate rights for each token
   const allRights: RedemptionRightsMap = new Map();
+  const snapshots: { [address: string]: PTokenSnapshot } = {};
+
   for (let i = 0; i < config.pTokenAddresses.length; i++) {
-    const rights = await calculateRedemptionRights(
+    const [rights, snapshot] = await calculateRedemptionRights(
       client,
       config.pTokenAddresses[i]
     );
+    snapshots[config.pTokenAddresses[i]] = snapshot;
+
     for (const [addr, balance] of rights.entries()) {
       if (!allRights.has(addr)) allRights.set(addr, new Map());
       allRights.get(addr)!.set(config.pointsIds[i], balance);
     }
   }
+
+  // Save snapshots
+  fs.writeFileSync(
+    "js-scripts/generateRedemptionRights/out/ptoken-snapshots.json",
+    JSON.stringify(snapshots, null, 2)
+  );
 
   // Generate merkle data
   const previousDistribution = JSON.parse(
