@@ -14,6 +14,8 @@ import {
 } from "viem";
 import { mainnet } from "viem/chains";
 import { MerkleTree } from "merkletreejs";
+import { pointTokenVaultABI } from "./abis/point-token-vault.ts";
+import { LosslessNumber, parse, stringify } from "lossless-json";
 
 // Types
 type PointsBalance = Map<`0x${string}`, bigint>;
@@ -23,7 +25,7 @@ interface AlphaDistributionData {
   pTokens: {
     [address: Address]: {
       [pointsId: `0x${string}`]: {
-        accumulatingPoints: string;
+        accumulatingPoints: LosslessNumber;
       };
     };
   };
@@ -60,8 +62,8 @@ interface PTokenSnapshot {
 // Overrides
 const UNI_POOL_OVERRIDES = {
   "0x597a1b0515bbeEe6796B89a6f403c3fD41BB626C": {
-    "0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D": 6487631537430741114,
-    "0x44Cb2d713BDa3858001f038645fD05E23E5DE03D": 27597767454066598826095,
+    "0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D": "6487631537430741114",
+    "0x44Cb2d713BDa3858001f038645fD05E23E5DE03D": "27597767454066598826095",
   },
 };
 
@@ -76,13 +78,16 @@ const config = {
   rewardsPerPToken: (process.env.REWARDS_PER_P_TOKEN as string)?.split(
     ","
   ) as string[],
+  pointTokenVaultAddress: process.env.POINT_TOKEN_VAULT_ADDRESS as Address,
 };
 
 // Core functions
 async function calculateRedemptionRights(
   client: PublicClient,
   pTokenAddress: Address,
-  rewardsMultiplier: string
+  rewardsMultiplier: string,
+  pointsId: `0x${string}`,
+  previousDistribution: AlphaDistributionData
 ): Promise<[Map<Address, bigint>, PTokenSnapshot]> {
   const redemptionRights = new Map<Address, bigint>();
   const rewardsMultiplierBigInt = BigInt(rewardsMultiplier);
@@ -151,6 +156,33 @@ async function calculateRedemptionRights(
     }
   }
 
+  // Add unclaimed pToken balances
+  const pointTokenVault = getContract({
+    address: config.pointTokenVaultAddress,
+    abi: pointTokenVaultABI,
+    client,
+  });
+  for (const [userAddress, addressPointsData] of Object.entries(
+    previousDistribution.pTokens
+  )) {
+    const { accumulatingPoints } = addressPointsData[pointsId];
+
+    const claimedPtokens = (await pointTokenVault.read.claimedPTokens([
+      userAddress,
+      pointsId,
+    ])) as bigint;
+
+    const unclaimedPtokens =
+      BigInt(accumulatingPoints.toString()) - claimedPtokens;
+
+    if (unclaimedPtokens > 0n) {
+      pTokenBalances.set(
+        userAddress as Address,
+        (pTokenBalances.get(userAddress as Address) || 0n) + unclaimedPtokens
+      );
+    }
+  }
+
   // Create snapshot object
   const snapshot: PTokenSnapshot = {
     address: pTokenAddress,
@@ -201,7 +233,7 @@ function generateMerkleData(
             [
               address as Address,
               pointsId as `0x${string}`,
-              BigInt(data.accumulatingPoints),
+              BigInt(data.accumulatingPoints.toString()),
             ]
           )
         )
@@ -246,7 +278,7 @@ function generateMerkleData(
             Object.entries(pointsData).map(([pointsId, data]) => [
               pointsId,
               {
-                amount: data.accumulatingPoints,
+                amount: data.accumulatingPoints.toString(),
                 proof: tree.getHexProof(
                   keccak256(
                     encodePacked(
@@ -254,7 +286,7 @@ function generateMerkleData(
                       [
                         address as Address,
                         pointsId as `0x${string}`,
-                        BigInt(data.accumulatingPoints),
+                        BigInt(data.accumulatingPoints.toString()),
                       ]
                     )
                   )
@@ -287,6 +319,13 @@ async function generateMerkleTree(): Promise<void> {
 
   console.log(`Processing at block #${await client.getBlockNumber()}`);
 
+  const previousDistribution = parse(
+    fs.readFileSync(
+      "js-scripts/generateRedemptionRights/last-alpha-distribution.json",
+      "utf8"
+    )
+  ) as AlphaDistributionData;
+
   // Calculate rights for each token
   const allRedemptionRights: RedemptionRightsMap = new Map();
   const snapshots: { [address: string]: PTokenSnapshot } = {};
@@ -295,7 +334,9 @@ async function generateMerkleTree(): Promise<void> {
     const [rights, snapshot] = await calculateRedemptionRights(
       client,
       config.pTokenAddresses[i],
-      config.rewardsPerPToken[i]
+      config.rewardsPerPToken[i],
+      config.pointsIds[i],
+      previousDistribution
     );
     snapshots[config.pTokenAddresses[i]] = snapshot;
 
@@ -330,13 +371,6 @@ async function generateMerkleTree(): Promise<void> {
   }
 
   // Generate merkle data
-  const previousDistribution = JSON.parse(
-    fs.readFileSync(
-      "js-scripts/generateRedemptionRights/last-alpha-distribution.json",
-      "utf8"
-    )
-  ) as AlphaDistributionData;
-
   const merklizedData = generateMerkleData(
     allRedemptionRights,
     previousDistribution
