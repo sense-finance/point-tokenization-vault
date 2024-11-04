@@ -8,7 +8,6 @@ import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 import {console} from "forge-std/console.sol";
@@ -118,7 +117,7 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
-    function setRedemptionENA30Oct24() public {
+    function setRedemptionENA4Nov24() public {
         // Core contract and token setup
         PointTokenVault vaultV0_1_0 = PointTokenVault(payable(0x1EeEBa76f211C4Dce994b9c5A74BDF25DB649Fa1));
         bytes32 pointsId = LibString.packTwo("Rumpel kPoint: Ethena S2", "kpSATS");
@@ -133,22 +132,8 @@ contract PointTokenVaultScripts is BatchScript {
 
         // Update merkle root
         vm.startBroadcast(MAINNET_MERKLE_UPDATER);
-        vaultV0_1_0.updateRoot(0x602cdd6dd4f1c6f7bb049ce8b23a49e5177dc84830c7f00cc09eb0f11f03d9be);
+        vaultV0_1_0.updateRoot(0x50420fa89bbefa971ffb968dc2547a8b5db8061d62dd3794ccc975531a127292);
         vm.stopBroadcast();
-
-        // Test redemption
-        bytes32[] memory proof = new bytes32[](5);
-        proof[0] = 0xc1a70bb7d5c4ddf647114cb36083bca867a80e37e187aa1d6705f3b12357d7cf;
-        proof[1] = 0x04a635b0e5b8e5ac70059fb9dc2682f5102a3b4a2f8b2c0d6f1ea43b1e04272f;
-        proof[2] = 0xab802966e4277e85c878dad4c849c7632735a56c3710c197470de81707286069;
-        proof[3] = 0x7c0bd8bd630d01f1a459f6cd963cfc5f58487dec582339b1d8f29edbbd41d8ab;
-        proof[4] = 0x0fe239692610c805880a540ea359a0f3f8314f94bb95cd4ec53d712ae6cdc63d;
-
-        address testUser = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
-        uint256 claimAmount = 52792622186481736164;
-
-        vm.prank(testUser);
-        vaultV0_1_0.redeemRewards(PointTokenVault.Claim(pointsId, claimAmount, claimAmount, proof), testUser);
     }
 
     // Useful for emergencies, where we need to override both the current and previous root at once
