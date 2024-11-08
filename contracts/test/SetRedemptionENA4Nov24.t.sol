@@ -54,15 +54,15 @@ contract SetRedemptionENA4Nov24Test is Test {
 
     function test_RedemptionRights1_ClaimTooMuch() public {
         bytes32[] memory proof = new bytes32[](5);
-        proof[0] = 0x991fd8976022911aeb40e40bcb5754f9529f2080710f7ec1db8ace85c4f7b7f8;
-        proof[1] = 0xc6f15a7cbd986873c6b761e81c98ee8ac4afd1c9885b7d8e0ae4de752040ab12;
-        proof[2] = 0xca808b743099c608cd9b81872c528c521d76505c116bedabfdcc6307c9c92bfb;
-        proof[3] = 0x703f21e968e8791afb70bcf780821f479ea90632b109016d8b24c8637771383c;
-        proof[4] = 0x0f76084b6c6777c64b0f591ee64d8c66c54c0bdeb5ce44142823c0f74b856267;
+        proof[0] = 0x6258fb3ee01fe8edb76a1ee2cb317cd32b8464c63e31903826acd02863982f31;
+        proof[1] = 0xd9d5035f478e73b0e33ae1677a34fb215dd9f25d858d17265608acd57f066e48;
+        proof[2] = 0x65c2bc0496edc30a605d1618f867da252e88358e98d08d80ad0d485df4439055;
+        proof[3] = 0x9c4c736ac69fbbc0f510cbee646cfcb0a5186004dbb3c577d7c3ab658ddcf209;
+        proof[4] = 0x2129557061359b11c571b9a63f6363b144b6ae40058d9731d0e165463fc18438;
 
         address USER = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
-        uint256 TOTAL_CLAIMABLE = 52792622186481736164;
-        uint256 CLAIM_AMOUNT = 52792622186481736164 + 10;
+        uint256 TOTAL_CLAIMABLE = 26396311093240867247;
+        uint256 CLAIM_AMOUNT = 26396311093240867247 + 10;
 
         vm.prank(USER);
         vm.expectRevert(PointTokenVault.ClaimTooLarge.selector);
