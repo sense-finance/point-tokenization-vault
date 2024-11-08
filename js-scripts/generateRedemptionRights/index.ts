@@ -78,19 +78,25 @@ const config = {
   rewardsPerPToken: (process.env.REWARDS_PER_P_TOKEN as string)?.split(
     ","
   ) as string[],
+  vestSizes: (process.env.VEST_SIZE as string)?.split(",") as string[],
   pointTokenVaultAddress: process.env.POINT_TOKEN_VAULT_ADDRESS as Address,
 };
 
 // Core functions
 async function calculateRedemptionRights(
   client: PublicClient,
-  pTokenAddress: Address,
-  rewardsMultiplier: string,
-  pointsId: `0x${string}`,
+  iteration: number,
   previousDistribution: AlphaDistributionData
 ): Promise<[Map<Address, bigint>, PTokenSnapshot]> {
+  const pTokenAddress = config.pTokenAddresses[iteration];
+  const rewardsMultiplier = config.rewardsPerPToken[iteration];
+  const pointsId = config.pointsIds[iteration];
+  const vestSize = config.vestSizes[iteration];
+
   const redemptionRights = new Map<Address, bigint>();
-  const rewardsMultiplierBigInt = BigInt(rewardsMultiplier);
+  const rewardsMultiplierBigInt = BigInt(
+    Number(rewardsMultiplier) * Number(vestSize)
+  );
   const blockNumber = await client.getBlockNumber();
 
   const logs = await client.getLogs({
@@ -333,9 +339,7 @@ async function generateMerkleTree(): Promise<void> {
   for (let i = 0; i < config.pTokenAddresses.length; i++) {
     const [rights, snapshot] = await calculateRedemptionRights(
       client,
-      config.pTokenAddresses[i],
-      config.rewardsPerPToken[i],
-      config.pointsIds[i],
+      i,
       previousDistribution
     );
     snapshots[config.pTokenAddresses[i]] = snapshot;
