@@ -186,6 +186,12 @@ async function calculateRedemptionRights(
         userAddress as Address,
         (pTokenBalances.get(userAddress as Address) || 0n) + unclaimedPtokens
       );
+
+      redemptionRights.set(
+        userAddress as Address,
+        (redemptionRights.get(userAddress as Address) || 0n) +
+          (unclaimedPtokens * rewardsMultiplierBigInt) / BigInt(1e18)
+      );
     }
   }
 
