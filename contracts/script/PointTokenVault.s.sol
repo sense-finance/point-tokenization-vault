@@ -4,10 +4,8 @@ pragma solidity =0.8.24;
 import {BatchScript} from "forge-safe/src/BatchScript.sol";
 
 import {PointTokenVault} from "../PointTokenVault.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {CREATE3} from "solmate/utils/CREATE3.sol";
 import {LibString} from "solady/utils/LibString.sol";
 
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
@@ -97,11 +95,12 @@ contract PointTokenVaultScripts is BatchScript {
     }
 
     function deployPToken() public {
-        vm.startBroadcast(JIM_PRIVATE_KEY);
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
 
-        PointTokenVault pointTokenVault = PointTokenVault(payable(0xbff7Fb79efC49504afc97e74F83EE618768e63E9));
+        PointTokenVault pointTokenVault = PointTokenVault(payable(0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61));
 
-        pointTokenVault.deployPToken(LibString.packTwo("ETHERFI Points", "pEF"));
+        pointTokenVault.deployPToken(LibString.packTwo("Rumpel kPt: ETHERFI S4", "kpEF-4"));
 
         vm.stopBroadcast();
     }
@@ -115,6 +114,25 @@ contract PointTokenVaultScripts is BatchScript {
         token.mint(SAM, 100e18);
         token.mint(AVA, 100e18);
 
+        vm.stopBroadcast();
+    }
+
+    function setRedemptionENA4Nov24() public {
+        // Core contract and token setup
+        PointTokenVault vaultV0_1_0 = PointTokenVault(payable(0x1EeEBa76f211C4Dce994b9c5A74BDF25DB649Fa1));
+        bytes32 pointsId = LibString.packTwo("Rumpel kPoint: Ethena S2", "kpSATS");
+        ERC20 senaToken = ERC20(0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9);
+        uint256 rewardsPerPToken = 63381137368827226;
+        bool usesRedemptionRights = true;
+
+        // Set redemption parameters
+        vm.startBroadcast(MAINNET_OPERATOR);
+        vaultV0_1_0.setRedemption(pointsId, senaToken, rewardsPerPToken, usesRedemptionRights);
+        vm.stopBroadcast();
+
+        // Update merkle root
+        vm.startBroadcast(MAINNET_MERKLE_UPDATER);
+        vaultV0_1_0.updateRoot(0xa1c76e2c6f7ac8300b288ff758b8a83c4a19e12780ca7ac5f61182f64ef8edf6);
         vm.stopBroadcast();
     }
 

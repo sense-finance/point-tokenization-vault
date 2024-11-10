@@ -10,6 +10,10 @@ ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
+fs_permissions = [{ access = "read", path = "./js-scripts/generateRedemptionRights/last-alpha-distribution.json" },
+{ access = "read", path = "./js-scripts/generateRedemptionRights/out/merged-distribution.json" },
+{ access = "read", path = "./js-scripts/generateRedemptionRights/out/ptoken-snapshot-kpsats.json" },
+{ access = "read", path = "./out/PointTokenVault.sol/PointTokenVault.json" }]
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
