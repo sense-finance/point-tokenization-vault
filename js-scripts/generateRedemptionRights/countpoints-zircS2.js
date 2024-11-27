@@ -5,8 +5,7 @@ import { readFileSync } from "fs";
 
 // received transaction -> value here is rounded in explorer
 // https://explorer.zircuit.com/tx/0xbeac890e91bbc50ea7281506c7f1b3912584330f4c1b8548177eedc8eb7e4d45
-const rewards = 100048737683233891942400;
-
+const rewards = 100047737683233891942400;
 
 // copy and paste from: distribution-block:21246006.json
 // https://github.com/sense-finance/pToken-distributions/blob/main/mainnet/distribution-block%3A21246006.json
@@ -30,21 +29,31 @@ for (const user in pTokens) {
 }
 
 const totalPTokens = total;
-const rewardsPerPToken = rewards * 1e18 / totalPTokens;
+const rewardsPerPToken = (rewards * 1e18) / totalPTokens;
 
 console.log();
-console.log(rewards.toLocaleString('fullwide', { useGrouping: false }));
+console.log(rewards.toLocaleString("fullwide", { useGrouping: false }));
 
 console.log();
 console.log("Total pTokens - claimed and unclaimed:");
-console.log(totalPTokens.toLocaleString('fullwide', { useGrouping: false }));
+console.log(totalPTokens.toLocaleString("fullwide", { useGrouping: false }));
 
 console.log();
 console.log("rewards per ptoken");
-console.log(rewardsPerPToken.toLocaleString('fullwide', { useGrouping: false }));
-console.log((rewardsPerPToken / 1e18));
+console.log(
+  rewardsPerPToken.toLocaleString("fullwide", { useGrouping: false })
+);
+console.log(rewardsPerPToken / 1e18);
 
 console.log();
-console.log(`rewardsPerToken is rounded down: ${rewards >= rewardsPerPToken * totalPTokens / 1e18}`)
-console.log((rewardsPerPToken * totalPTokens / 1e18).toLocaleString('fullwide', { useGrouping: false }));
-console.log(rewards.toLocaleString('fullwide', { useGrouping: false }));
+console.log(
+  `rewardsPerToken is rounded down: ${
+    rewards >= (rewardsPerPToken * totalPTokens) / 1e18
+  }`
+);
+console.log(
+  ((rewardsPerPToken * totalPTokens) / 1e18).toLocaleString("fullwide", {
+    useGrouping: false,
+  })
+);
+console.log(rewards.toLocaleString("fullwide", { useGrouping: false }));
