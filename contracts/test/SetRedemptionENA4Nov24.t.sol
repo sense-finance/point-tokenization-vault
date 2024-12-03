@@ -27,14 +27,15 @@ contract SetRedemptionENA4Nov24Test is Test {
 
     function test_RedemptionRights1() public {
         bytes32[] memory proof = new bytes32[](5);
-        proof[0] = 0x4e0230e7a7546148f373efe52256490c04ea0019e199f2256a375e75cf2b6b96;
-        proof[1] = 0xfaca43636023a73bf06295aa693c262efe0bb3231357a68b8ad7eec7e901c8ef;
-        proof[2] = 0x03c4c7f992659d2c405eb95248d21dfd7f66c7bdef49d9d33cb97b0b5d35c37a;
-        proof[3] = 0x617d803c581341b5720c7932932ca45ebfb90e87a122f801b0d5fe53b747db51;
-        proof[4] = 0x620f05d3b25d35da47076de4dceb31f95567ff863138ae7d1fe416ea0bc2ff41;
+
+        proof[0] = 0x8b788cab342842ae529d8efac9659e1af9367270c13caaf4c8b5ef4c67a51402;
+        proof[1] = 0xa34973d9d15ff868d4cfd39025611d809472959ac42ba6379c3344f8412fcf18;
+        proof[2] = 0x8f786c98629ab5c75ba31b70bf6d7fe49cbfe7f632d89dc4d11d2c9b68864547;
+        proof[3] = 0xd9af666289190b39cb1e66a4f4f2de475b7ac64baf54b333cb0abe715f79bfb8;
+        proof[4] = 0xe7ff0b85cefe5b0a0a170f7435a4c8f59d11f630ebcf6e14fe8d412088e30f9b;
 
         address USER = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
-        uint256 AMOUNT = 26396311093240867247;
+        uint256 AMOUNT = 31472524764711309680;
 
         vm.prank(USER);
         vaultV0_1_0.redeemRewards(PointTokenVault.Claim(pointsId, AMOUNT, AMOUNT, proof), USER);
@@ -58,15 +59,15 @@ contract SetRedemptionENA4Nov24Test is Test {
 
     function test_RedemptionRights1_ClaimTooMuch() public {
         bytes32[] memory proof = new bytes32[](5);
-        proof[0] = 0x4e0230e7a7546148f373efe52256490c04ea0019e199f2256a375e75cf2b6b96;
-        proof[1] = 0xfaca43636023a73bf06295aa693c262efe0bb3231357a68b8ad7eec7e901c8ef;
-        proof[2] = 0x03c4c7f992659d2c405eb95248d21dfd7f66c7bdef49d9d33cb97b0b5d35c37a;
-        proof[3] = 0x617d803c581341b5720c7932932ca45ebfb90e87a122f801b0d5fe53b747db51;
-        proof[4] = 0x620f05d3b25d35da47076de4dceb31f95567ff863138ae7d1fe416ea0bc2ff41;
+        proof[0] = 0x8b788cab342842ae529d8efac9659e1af9367270c13caaf4c8b5ef4c67a51402;
+        proof[1] = 0xa34973d9d15ff868d4cfd39025611d809472959ac42ba6379c3344f8412fcf18;
+        proof[2] = 0x8f786c98629ab5c75ba31b70bf6d7fe49cbfe7f632d89dc4d11d2c9b68864547;
+        proof[3] = 0xd9af666289190b39cb1e66a4f4f2de475b7ac64baf54b333cb0abe715f79bfb8;
+        proof[4] = 0xe7ff0b85cefe5b0a0a170f7435a4c8f59d11f630ebcf6e14fe8d412088e30f9b;
 
         address USER = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
-        uint256 TOTAL_CLAIMABLE = 26396311093240867247;
-        uint256 CLAIM_AMOUNT = 26396311093240867247 + 10;
+        uint256 TOTAL_CLAIMABLE = 31472524764711309680;
+        uint256 CLAIM_AMOUNT = TOTAL_CLAIMABLE + 10;
 
         vm.prank(USER);
         vm.expectRevert(PointTokenVault.ClaimTooLarge.selector);
@@ -105,40 +106,38 @@ contract SetRedemptionENA4Nov24Test is Test {
         rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/ptoken-snapshot-kpsats.json");
         rf.balances = vm.readFile(rf.path);
 
-        string[] memory users = vm.parseJsonKeys(rf.alphaDistribution,string.concat(".pTokens"));
-        for(uint256 i=0; i < users.length; i++) {
+        string[] memory users = vm.parseJsonKeys(rf.alphaDistribution, string.concat(".pTokens"));
+        for (uint256 i = 0; i < users.length; i++) {
             RedemptionData memory rd;
             address user = stringToAddress(users[i]);
             userAccountedFor[user] = true;
-            
+
             rd.pTokenBalance = kpSats.balanceOf(user);
             rd.claimedPoints = vaultV0_1_0.claimedPTokens(user, pointsId);
-            rd.totalClaimablePoints  = vm.parseJsonUint(
+            rd.totalClaimablePoints = vm.parseJsonUint(
                 rf.alphaDistribution,
                 string.concat(".pTokens.", vm.toString(user), ".", vm.toString(pointsId), ".accumulatingPoints")
             );
 
-            rd.unclaimedPoints = rd. totalClaimablePoints - rd.claimedPoints;
+            rd.unclaimedPoints = rd.totalClaimablePoints - rd.claimedPoints;
             rd.totalRedeemableBalance = rd.pTokenBalance + rd.unclaimedPoints;
 
             // uni overrides
-            if(user == 0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D){
+            if (user == 0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D) {
                 rd.totalRedeemableBalance += 6487631537430741114;
             }
-            if(user == 0x44Cb2d713BDa3858001f038645fD05E23E5DE03D){
+            if (user == 0x44Cb2d713BDa3858001f038645fD05E23E5DE03D) {
                 rd.totalRedeemableBalance += 27597767454066598826095;
             }
 
             expectedRedemptionRights = rd.totalRedeemableBalance * rewardsPerPToken / 2e18;
             try vm.parseJsonUint(
-                    rf.merged,
-                    string.concat(".redemptionRights.", vm.toString(user), ".", vm.toString(pointsId), ".amount")
-                ) returns (uint256 amount) {
-                    redemptionRightAmount = amount;
-                }
-             catch {
+                rf.merged, string.concat(".redemptionRights.", vm.toString(user), ".", vm.toString(pointsId), ".amount")
+            ) returns (uint256 amount) {
+                redemptionRightAmount = amount;
+            } catch {
                 redemptionRightAmount = 0;
-            }   
+            }
 
             assertLe(redemptionRightAmount, expectedRedemptionRights);
             assertApproxEqAbs(redemptionRightAmount, expectedRedemptionRights, 1e10);
@@ -148,21 +147,21 @@ contract SetRedemptionENA4Nov24Test is Test {
         }
 
         // account for users with pToken balances, but no claimable tokens
-        string[] memory balanceUsers = vm.parseJsonKeys(rf.balances,string.concat(".balances"));
-        for(uint256 i=0; i < balanceUsers.length; i++) {
+        string[] memory balanceUsers = vm.parseJsonKeys(rf.balances, string.concat(".balances"));
+        for (uint256 i = 0; i < balanceUsers.length; i++) {
             address user = stringToAddress(balanceUsers[i]);
-            if(!userAccountedFor[user]){
+            if (!userAccountedFor[user]) {
                 RedemptionData memory rd;
                 userAccountedFor[user] = true;
-                
+
                 rd.pTokenBalance = kpSats.balanceOf(user);
                 rd.totalRedeemableBalance = rd.pTokenBalance;
 
                 // uni overrides
-                if(user == 0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D){
+                if (user == 0x24C694d193B19119bcDea9D40a3b0bfaFb281E6D) {
                     rd.totalRedeemableBalance += 6487631537430741114;
                 }
-                if(user == 0x44Cb2d713BDa3858001f038645fD05E23E5DE03D){
+                if (user == 0x44Cb2d713BDa3858001f038645fD05E23E5DE03D) {
                     rd.totalRedeemableBalance += 27597767454066598826095;
                 }
 
@@ -170,14 +169,13 @@ contract SetRedemptionENA4Nov24Test is Test {
 
                 redemptionRightAmount;
                 try vm.parseJsonUint(
-                        rf.merged,
-                        string.concat(".redemptionRights.", vm.toString(user), ".", vm.toString(pointsId), ".amount")
-                    ) returns (uint256 amount) {
-                        redemptionRightAmount = amount;
-                    }
-                catch {
+                    rf.merged,
+                    string.concat(".redemptionRights.", vm.toString(user), ".", vm.toString(pointsId), ".amount")
+                ) returns (uint256 amount) {
+                    redemptionRightAmount = amount;
+                } catch {
                     redemptionRightAmount = 0;
-                }   
+                }
 
                 assertLe(redemptionRightAmount, expectedRedemptionRights);
                 assertApproxEqAbs(redemptionRightAmount, expectedRedemptionRights, 1e10);
@@ -191,9 +189,11 @@ contract SetRedemptionENA4Nov24Test is Test {
     function stringToAddress(string memory _address) internal returns (address) {
         // Remove "0x" prefix if present
         bytes memory _addressBytes = bytes(_address);
-        if (_addressBytes.length >= 2 && _addressBytes[0] == "0" && (_addressBytes[1] == "x" || _addressBytes[1] == "X")) {
+        if (
+            _addressBytes.length >= 2 && _addressBytes[0] == "0" && (_addressBytes[1] == "x" || _addressBytes[1] == "X")
+        ) {
             string memory _cleanAddress = new string(_addressBytes.length - 2);
-            for(uint i = 0; i < _addressBytes.length - 2; i++) {
+            for (uint256 i = 0; i < _addressBytes.length - 2; i++) {
                 bytes(_cleanAddress)[i] = _addressBytes[i + 2];
             }
             _address = _cleanAddress;
@@ -207,10 +207,10 @@ contract SetRedemptionENA4Nov24Test is Test {
         uint160 _parsedAddress = 0;
 
         // Convert each character to its hex value
-        for(uint i = 0; i < 40; i++) {
+        for (uint256 i = 0; i < 40; i++) {
             bytes1 char = _hexBytes[i];
             uint8 digit;
-            
+
             if (uint8(char) >= 48 && uint8(char) <= 57) {
                 // 0-9
                 digit = uint8(char) - 48;
