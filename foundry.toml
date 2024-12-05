@@ -12,6 +12,7 @@ build_info = true
 extra_output = ["storageLayout"]
 fs_permissions = [{ access = "read", path = "./js-scripts/generateRedemptionRights/last-alpha-distribution.json" },
 { access = "read", path = "./js-scripts/generateRedemptionRights/out/merged-distribution.json" },
+{ access = "read", path = "js-scripts/generateRedemptionRights/out/merged-distribution-03Dec24.json" },
 { access = "read", path = "./js-scripts/generateRedemptionRights/out/ptoken-snapshot-kpsats.json" },
 { access = "read", path = "./out/PointTokenVault.sol/PointTokenVault.json" }]
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity =0.8.24;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {ERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 
@@ -88,6 +88,7 @@ contract SetRedemptionENA4Nov24Test is Test {
         string path;
         string alphaDistribution;
         string merged;
+        string merged2;
         string balances;
     }
 
@@ -183,6 +184,49 @@ contract SetRedemptionENA4Nov24Test is Test {
                 expectedRedemptionRights = 0;
                 redemptionRightAmount = 0;
             }
+        }
+    }
+
+    function test_RedemptionRightsCalculatedAmount_Dec3() public {
+        uint256 rewardsPerPToken = 63381137368827226;
+
+        uint256 originalReceivedTokens = 1324312 * 1e17;
+        uint256 newTokens = 2546753846 * 1e13;
+        uint256 expectedProportion = originalReceivedTokens * 1e18 / (originalReceivedTokens + newTokens);
+
+        uint256 expectedRedemptionRights;
+        uint256 redemptionRightAmountOriginal;
+        uint256 redemptionRightAmountDec3;
+
+
+        RedemptionFiles memory rf;
+        rf.root = vm.projectRoot();
+        rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution.json");
+        rf.merged = vm.readFile(rf.path);
+        rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution-03Dec24.json");
+        rf.merged2 = vm.readFile(rf.path);
+
+        string[] memory users = vm.parseJsonKeys(rf.merged, string.concat(".redemptionRights"));
+        for(uint i = 0; i < users.length; i++){
+            try vm.parseJsonUint(
+                rf.merged, string.concat(".redemptionRights.", users[i], ".", vm.toString(pointsId), ".amount")
+            ) returns (uint256 amount) {
+                redemptionRightAmountOriginal = amount;
+            } catch {
+                redemptionRightAmountOriginal = 0;
+            }
+
+            try vm.parseJsonUint(
+                rf.merged2, string.concat(".redemptionRights.", users[i], ".", vm.toString(pointsId), ".amount")
+            ) returns (uint256 amount) {
+                redemptionRightAmountDec3 = amount;
+            } catch {
+                redemptionRightAmountDec3 = 0;
+            }
+
+            uint256 proportion = redemptionRightAmountOriginal * 1e18 / redemptionRightAmountDec3;
+
+            assertApproxEqAbs(proportion, expectedProportion, 1e10);
         }
     }
 
