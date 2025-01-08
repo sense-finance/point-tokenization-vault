@@ -26,16 +26,15 @@ contract SetRedemptionENA4Nov24Test is Test {
     }
 
     function test_RedemptionRights1() public {
-        bytes32[] memory proof = new bytes32[](5);
+        bytes32[] memory proof = new bytes32[](4);
 
-        proof[0] = 0x8b788cab342842ae529d8efac9659e1af9367270c13caaf4c8b5ef4c67a51402;
-        proof[1] = 0xa34973d9d15ff868d4cfd39025611d809472959ac42ba6379c3344f8412fcf18;
-        proof[2] = 0x8f786c98629ab5c75ba31b70bf6d7fe49cbfe7f632d89dc4d11d2c9b68864547;
-        proof[3] = 0xd9af666289190b39cb1e66a4f4f2de475b7ac64baf54b333cb0abe715f79bfb8;
-        proof[4] = 0xe7ff0b85cefe5b0a0a170f7435a4c8f59d11f630ebcf6e14fe8d412088e30f9b;
+        proof[0] = 0xe0c93f69992755e2a8ff4ba9852d79204f42a82e3517feb32ed3db3ffc0ff0ef;
+        proof[1] = 0x2edc92e0f7721f84ac287a3d576011980a1c14d2055e9471d23704d678db8f27;
+        proof[2] = 0x5ac7248cc4f84bfe2aad55418ecd3de62da088a0e5f5467f4cb5bbef25ff5830;
+        proof[3] = 0x624abde6fe9afe030ebe5563711d71d0d93eb659435f14b21333ff4169089b09;
 
         address USER = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
-        uint256 AMOUNT = 31472524764711309680;
+        uint256 AMOUNT = 36548738436181752113;
 
         vm.prank(USER);
         vaultV0_1_0.redeemRewards(PointTokenVault.Claim(pointsId, AMOUNT, AMOUNT, proof), USER);
@@ -58,15 +57,15 @@ contract SetRedemptionENA4Nov24Test is Test {
     }
 
     function test_RedemptionRights1_ClaimTooMuch() public {
-        bytes32[] memory proof = new bytes32[](5);
-        proof[0] = 0x8b788cab342842ae529d8efac9659e1af9367270c13caaf4c8b5ef4c67a51402;
-        proof[1] = 0xa34973d9d15ff868d4cfd39025611d809472959ac42ba6379c3344f8412fcf18;
-        proof[2] = 0x8f786c98629ab5c75ba31b70bf6d7fe49cbfe7f632d89dc4d11d2c9b68864547;
-        proof[3] = 0xd9af666289190b39cb1e66a4f4f2de475b7ac64baf54b333cb0abe715f79bfb8;
-        proof[4] = 0xe7ff0b85cefe5b0a0a170f7435a4c8f59d11f630ebcf6e14fe8d412088e30f9b;
+        bytes32[] memory proof = new bytes32[](4);
+
+        proof[0] = 0xe0c93f69992755e2a8ff4ba9852d79204f42a82e3517feb32ed3db3ffc0ff0ef;
+        proof[1] = 0x2edc92e0f7721f84ac287a3d576011980a1c14d2055e9471d23704d678db8f27;
+        proof[2] = 0x5ac7248cc4f84bfe2aad55418ecd3de62da088a0e5f5467f4cb5bbef25ff5830;
+        proof[3] = 0x624abde6fe9afe030ebe5563711d71d0d93eb659435f14b21333ff4169089b09;
 
         address USER = 0x25E426b153e74Ab36b2685c3A464272De60888Ae;
-        uint256 TOTAL_CLAIMABLE = 31472524764711309680;
+        uint256 TOTAL_CLAIMABLE = 36548738436181752113;
         uint256 CLAIM_AMOUNT = TOTAL_CLAIMABLE + 10;
 
         vm.prank(USER);
@@ -198,7 +197,6 @@ contract SetRedemptionENA4Nov24Test is Test {
         uint256 redemptionRightAmountOriginal;
         uint256 redemptionRightAmountDec3;
 
-
         RedemptionFiles memory rf;
         rf.root = vm.projectRoot();
         rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution.json");
@@ -207,7 +205,7 @@ contract SetRedemptionENA4Nov24Test is Test {
         rf.merged2 = vm.readFile(rf.path);
 
         string[] memory users = vm.parseJsonKeys(rf.merged, string.concat(".redemptionRights"));
-        for(uint i = 0; i < users.length; i++){
+        for (uint256 i = 0; i < users.length; i++) {
             try vm.parseJsonUint(
                 rf.merged, string.concat(".redemptionRights.", users[i], ".", vm.toString(pointsId), ".amount")
             ) returns (uint256 amount) {
@@ -225,6 +223,48 @@ contract SetRedemptionENA4Nov24Test is Test {
             }
 
             uint256 proportion = redemptionRightAmountOriginal * 1e18 / redemptionRightAmountDec3;
+
+            assertApproxEqAbs(proportion, expectedProportion, 1e10);
+        }
+    }
+
+    function test_RedemptionRightsCalculatedAmount_Jan7() public {
+        uint256 rewardsPerPToken = 63381137368827226;
+
+        uint256 originalReceivedTokens = 1324312 * 1e17;
+        uint256 newTokens = 2546753846 * 1e13 + 2546753846 * 1e13; // same new token amount as dec3
+        uint256 expectedProportion = originalReceivedTokens * 1e18 / (originalReceivedTokens + newTokens);
+
+        uint256 expectedRedemptionRights;
+        uint256 redemptionRightAmountOriginal;
+        uint256 redemptionRightAmountJan7;
+
+        RedemptionFiles memory rf;
+        rf.root = vm.projectRoot();
+        rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution.json");
+        rf.merged = vm.readFile(rf.path);
+        rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution-07Jan25.json");
+        rf.merged2 = vm.readFile(rf.path);
+
+        string[] memory users = vm.parseJsonKeys(rf.merged, string.concat(".redemptionRights"));
+        for (uint256 i = 0; i < users.length; i++) {
+            try vm.parseJsonUint(
+                rf.merged, string.concat(".redemptionRights.", users[i], ".", vm.toString(pointsId), ".amount")
+            ) returns (uint256 amount) {
+                redemptionRightAmountOriginal = amount;
+            } catch {
+                redemptionRightAmountOriginal = 0;
+            }
+
+            try vm.parseJsonUint(
+                rf.merged2, string.concat(".redemptionRights.", users[i], ".", vm.toString(pointsId), ".amount")
+            ) returns (uint256 amount) {
+                redemptionRightAmountJan7 = amount;
+            } catch {
+                redemptionRightAmountJan7 = 0;
+            }
+
+            uint256 proportion = redemptionRightAmountOriginal * 1e18 / redemptionRightAmountJan7;
 
             assertApproxEqAbs(proportion, expectedProportion, 1e10);
         }
