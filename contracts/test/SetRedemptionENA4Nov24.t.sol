@@ -245,7 +245,7 @@ contract SetRedemptionENA4Nov24Test is Test {
         rf.root = vm.projectRoot();
         rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution.json");
         rf.merged = vm.readFile(rf.path);
-        rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution-06Feb25.json");
+        rf.path = string.concat(rf.root, "/js-scripts/generateRedemptionRights/out/merged-distribution-07Jan25.json");
         rf.merged2 = vm.readFile(rf.path);
 
         string[] memory users = vm.parseJsonKeys(rf.merged, string.concat(".redemptionRights"));
