@@ -132,7 +132,7 @@ contract PointTokenVaultScripts is BatchScript {
 
         // Update merkle root
         vm.startBroadcast(MAINNET_MERKLE_UPDATER);
-        vaultV0_1_0.updateRoot(0xc0ca8b4749c3dbe63b8cc2aae178418a7db0d76c951ca29a9cbe4b0f5d830dfe);
+        vaultV0_1_0.updateRoot(0xb7fc593b2beeb58536854e23d90c834d18163116f77115b7756723ab4c75cc27);
         vm.stopBroadcast();
     }
 
