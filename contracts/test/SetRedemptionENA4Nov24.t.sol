@@ -276,7 +276,7 @@ contract SetRedemptionENA4Nov24Test is Test {
         uint256 rewardsPerPToken = 63381137368827226;
 
         uint256 originalReceivedTokens = 1324312 * 1e17;
-        uint256 newTokens = 2546753846 * 1e13 + 2546753846 * 1e13 + 2037403076 * 1e13;
+        uint256 newTokens = 2546753846 * 1e13 + 2546753846 * 1e13 + 20374030768 * 1e12;
         uint256 expectedProportion = originalReceivedTokens * 1e18 / (originalReceivedTokens + newTokens);
 
         uint256 expectedRedemptionRights;
