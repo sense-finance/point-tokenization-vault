@@ -130,19 +130,34 @@ contract EtherFiS4ClaimScript is Script {
                 v.vaultBalanceBefore = lrt2.balanceOf(MAINNET_POINT_TOKENIZATION_VAULT);
                 v.ownerBalanceBefore = lrt2.balanceOf(owners[0]);
 
-                RumpelModule.Call[] memory transferCalls = new RumpelModule.Call[](2);
-                transferCalls[0] = RumpelModule.Call({
-                    safe: ISafe(v.userAdd),
-                    to: MAINNET_LRT2,
-                    data: abi.encodeWithSelector(ERC20.transfer.selector, MAINNET_POINT_TOKENIZATION_VAULT, v.rewardAmount),
-                    operation: Enum.Operation.Call
-                });
-                transferCalls[1] = RumpelModule.Call({
-                    safe: ISafe(v.userAdd),
-                    to: MAINNET_LRT2,
-                    data: abi.encodeWithSelector(ERC20.transfer.selector, owners[0], v.stakingRewards),
-                    operation: Enum.Operation.Call
-                });
+                RumpelModule.Call[] memory transferCalls;
+                if (v.stakingRewards == 0) {
+                    transferCalls = new RumpelModule.Call[](1);
+                    transferCalls[0] = RumpelModule.Call({
+                        safe: ISafe(v.userAdd),
+                        to: MAINNET_LRT2,
+                        data: abi.encodeWithSelector(
+                            ERC20.transfer.selector, MAINNET_POINT_TOKENIZATION_VAULT, v.rewardAmount
+                        ),
+                        operation: Enum.Operation.Call
+                    });
+                } else {
+                    transferCalls = new RumpelModule.Call[](2);
+                    transferCalls[0] = RumpelModule.Call({
+                        safe: ISafe(v.userAdd),
+                        to: MAINNET_LRT2,
+                        data: abi.encodeWithSelector(
+                            ERC20.transfer.selector, MAINNET_POINT_TOKENIZATION_VAULT, v.rewardAmount
+                        ),
+                        operation: Enum.Operation.Call
+                    });
+                    transferCalls[1] = RumpelModule.Call({
+                        safe: ISafe(v.userAdd),
+                        to: MAINNET_LRT2,
+                        data: abi.encodeWithSelector(ERC20.transfer.selector, owners[0], v.stakingRewards),
+                        operation: Enum.Operation.Call
+                    });
+                }
                 rumpelModule.exec(transferCalls);
 
                 console2.log(v.userAdd);
