@@ -136,6 +136,20 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
+    function setRedemptionEtherFi19Feb25() public {
+        // Core contract and token setup
+        PointTokenVault vaultV1_0_0 = PointTokenVault(payable(0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61));
+        bytes32 pointsId = LibString.packTwo("Rumpel kPt: ETHERFI S4", "kpEF-4");
+        ERC20 kingToken = ERC20(0x8F08B70456eb22f6109F57b8fafE862ED28E6040);
+        uint256 rewardsPerPToken = 895065548932;
+        bool usesRedemptionRights = false;
+
+        // Set redemption parameters
+        vm.startBroadcast(MAINNET_OPERATOR);
+        vaultV1_0_0.setRedemption(pointsId, kingToken, rewardsPerPToken, usesRedemptionRights);
+        vm.stopBroadcast();
+    }
+
     // Useful for emergencies, where we need to override both the current and previous root at once
     // For example, if minting for a specific pToken needs to be stopped, a root without any claim rights for the pToken would need to be pushed twice
     function doublePushRoot(address pointTokenVaultAddress, bytes32 newRoot, address merkleUpdaterSafe) public {
