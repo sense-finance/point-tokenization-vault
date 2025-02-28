@@ -53,6 +53,9 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     mapping(address => mapping(bytes32 => uint256)) public feelesslyRedeemedPTokens; // user => pointsId => feelesslyRedeemedPTokens
     address public feeCollector;
 
+    // Deposit paused flag
+    bool public depositPaused = true;
+
     struct Claim {
         bytes32 pointsId;
         uint256 totalClaimable;
@@ -88,6 +91,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     event FeeCollectorSet(address feeCollector);
     event MintFeeSet(uint256 mintFee);
     event RedemptionFeeSet(uint256 redemptionFee);
+    event DepositPauseStateChanged(bool isPaused);
 
     error ProofInvalidOrExpired();
     error ClaimTooLarge();
@@ -98,6 +102,7 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
     error PTokenNotDeployed();
     error AmountTooSmall();
     error NotTrustedReceiver();
+    error DepositsArePaused();
     error ExecutionFailed(address to, bytes data);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -115,6 +120,10 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     // Rebasing and fee-on-transfer tokens must be wrapped before depositing. ie, they are not supported natively.
     function deposit(ERC20 _token, uint256 _amount, address _receiver) public {
+        if (depositPaused) {
+            revert DepositsArePaused();
+        }
+
         uint256 cap = caps[address(_token)];
 
         if (cap != type(uint256).max) {
@@ -376,6 +385,11 @@ contract PointTokenVault is UUPSUpgradeable, AccessControlUpgradeable, Multicall
 
     function setFeeCollector(address _feeCollector) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setFeeCollector(_feeCollector);
+    }
+
+    function setDepositPaused(bool _isPaused) external onlyRole(OPERATOR_ROLE) {
+        depositPaused = _isPaused;
+        emit DepositPauseStateChanged(_isPaused);
     }
 
     // To handle arbitrary reward claiming logic.
