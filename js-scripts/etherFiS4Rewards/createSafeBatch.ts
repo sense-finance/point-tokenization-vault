@@ -31,7 +31,7 @@ const listJsonFiles = (dirPath: string): string[] => {
 // Main function
 async function main() {
 
-  const dryRunPath = path.join(process.cwd(), "broadcast", "EtherFiS4ClaimScript.s.sol", "1", "dry-run");
+  const dryRunPath = path.join(process.cwd(), "broadcast", "KingDistributionScript.s.sol", "1", "dry-run");
   const jsonFiles = listJsonFiles(dryRunPath);
 
   console.log("Available JSON files:");
@@ -73,7 +73,8 @@ async function main() {
     process.exit(0);
   }
 
-  const batchJson = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions);
+  const batchJsonA = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions.slice(0,transactions.length/2 + 1));
+  const batchJsonB = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions.slice(transactions.length/2 + 1,transactions.length));
 
   // Create safe-batches folder one level up from the current working directory if it doesn't exist
   const safeBatchesFolder = path.join(process.cwd(), "safe-batches");
@@ -82,10 +83,13 @@ async function main() {
   }
 
   // Write the result to a file in the safe-batches folder
-  const outputPath = path.join(safeBatchesFolder, `output.json`);
-  fs.writeFileSync(outputPath, JSON.stringify(batchJson, null, 2));
+  const outputPathA = path.join(safeBatchesFolder, `KingDistribution_3_5_25_a.json`);
+  fs.writeFileSync(outputPathA, JSON.stringify(batchJsonA, null, 2));
 
-  console.log(`Transactions have been written to ${outputPath}`);
+  const outputPathB = path.join(safeBatchesFolder, `KingDistribution_3_5_25_b.json`);
+  fs.writeFileSync(outputPathB, JSON.stringify(batchJsonB, null, 2));
+
+  console.log(`Transactions have been written`);
 }
 
 // Modify the main function call to pass any errors to console.error
