@@ -38,16 +38,6 @@ contract KingDistributionScript is Script {
         bytes32 Root;
     }
 
-    // 1. get all rumpel wallets (users) from the JSON - for each user:
-    // 2. get that users current root & amount (check current root is expected root). amount = total claimable
-    // 3. get that users historical reward associated with the last staking reward root. this is the total staking rewards
-    // 4. get that users proof
-    // 5. claim from the merkle contract (can come from any contract, so directly from merkle)
-    // 6. calculate the user's reward amount (^2 - 3)
-    // 7. override the total staking rewards for user if they've previously claimed
-    // 8. use the module to execute two transfers from the rumpel wallet
-    // 8a. transfer reward amount to the point tokenization vault
-    // 8b. transfer the staking rewards to the rumpel wallet owner
     function run() public {
         ERC20 lrt2 = ERC20(MAINNET_LRT2);
         ILRT2Claim lrt2Claim = ILRT2Claim(MAINNET_ETHERFI_LRT2_CLAIM);
