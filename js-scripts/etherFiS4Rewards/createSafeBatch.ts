@@ -23,15 +23,21 @@ const getUserInput = async (question: string): Promise<string> => {
 
 // Function to list JSON files in the dry-run folder
 const listJsonFiles = (dirPath: string): string[] => {
-  return fs.readdirSync(dirPath)
-    .filter(file => file.endsWith('.json'))
-    .map(file => path.join(dirPath, file));
+  return fs
+    .readdirSync(dirPath)
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => path.join(dirPath, file));
 };
 
 // Main function
 async function main() {
-
-  const dryRunPath = path.join(process.cwd(), "broadcast", "KingDistributionScript.s.sol", "1", "dry-run");
+  const dryRunPath = path.join(
+    process.cwd(),
+    "broadcast",
+    "KingDistributionScript.s.sol",
+    "1",
+    "dry-run"
+  );
   const jsonFiles = listJsonFiles(dryRunPath);
 
   console.log("Available JSON files:");
@@ -39,7 +45,9 @@ async function main() {
     console.log(`${index + 1}. ${path.basename(file)}`);
   });
 
-  const selection = await getUserInput("Enter the number of the file you want to use: ");
+  const selection = await getUserInput(
+    "Enter the number of the file you want to use: "
+  );
   const selectedFile = jsonFiles[parseInt(selection) - 1];
 
   if (!selectedFile) {
@@ -66,15 +74,16 @@ async function main() {
     console.log(`Data: ${tx.data.slice(0, 50)}...`);
   });
 
-  const confirm = await getUserInput("\nDo you want to proceed with these transactions? (y/n): ");
+  const confirm = await getUserInput(
+    "\nDo you want to proceed with these transactions? (y/n): "
+  );
 
-  if (confirm.toLowerCase() !== 'y') {
+  if (confirm.toLowerCase() !== "y") {
     console.log("Operation cancelled. Exiting.");
     process.exit(0);
   }
 
-  const batchJsonA = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions.slice(0,transactions.length/2 + 1));
-  const batchJsonB = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions.slice(transactions.length/2 + 1,transactions.length));
+  const batchJson = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions);
 
   // Create safe-batches folder one level up from the current working directory if it doesn't exist
   const safeBatchesFolder = path.join(process.cwd(), "safe-batches");
@@ -83,11 +92,11 @@ async function main() {
   }
 
   // Write the result to a file in the safe-batches folder
-  const outputPathA = path.join(safeBatchesFolder, `KingDistribution_3_5_25_a.json`);
-  fs.writeFileSync(outputPathA, JSON.stringify(batchJsonA, null, 2));
-
-  const outputPathB = path.join(safeBatchesFolder, `KingDistribution_3_5_25_b.json`);
-  fs.writeFileSync(outputPathB, JSON.stringify(batchJsonB, null, 2));
+  const outputPathA = path.join(
+    safeBatchesFolder,
+    `KingDistribution_4_2_25.json`
+  );
+  fs.writeFileSync(outputPathA, JSON.stringify(batchJson, null, 2));
 
   console.log(`Transactions have been written`);
 }
