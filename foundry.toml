@@ -15,6 +15,7 @@ fs_permissions = [{ access = "read", path = "./js-scripts/generateRedemptionRigh
 { access = "read", path = "js-scripts/generateRedemptionRights/out/merged-distribution-03Dec24.json" },
 { access = "read", path = "js-scripts/generateRedemptionRights/out/merged-distribution-07Jan25.json" },
 { access = "read", path = "js-scripts/generateRedemptionRights/out/merged-distribution-06Feb25.json" },
+{ access = "read", path = "js-scripts/generateRedemptionRights/out/merged-distribution-01Apr25.json" },
 { access = "read", path = "./js-scripts/generateRedemptionRights/out/ptoken-snapshot-kpsats.json" },
 { access = "read", path = "js-scripts/etherFiS4Rewards/KingRewards.json" },
 { access = "read", path = "js-scripts/etherFiS4Rewards/KingRewards_3_5_25.json" },
