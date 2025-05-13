@@ -94,7 +94,7 @@ async function main() {
   // Write the result to a file in the safe-batches folder
   const outputPathA = path.join(
     safeBatchesFolder,
-    `KingDistribution_4_2_25.json`
+    `KingDistribution_5_7_25.json`
   );
   fs.writeFileSync(outputPathA, JSON.stringify(batchJson, null, 2));
 

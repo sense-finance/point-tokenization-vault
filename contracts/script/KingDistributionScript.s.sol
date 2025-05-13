@@ -15,9 +15,11 @@ contract KingDistributionScript is Script {
 
     bytes32 public constant EXPECTED_ROOT_3_5_25 = 0xdbf5085b731f41c2bc92d662425123a06978a05ada163f9d0b67353274b3f308;
     bytes32 public constant EXPECTED_ROOT_4_2_25 = 0x2418d9aa8353242b80852b09e1f4a9bb484c771268d8af884fc676b194990531;
+    bytes32 public constant EXPECTED_ROOT_5_7_25 = 0x7a9c48553c086965f22bb9b06b5425664421a97167669045a86886d52b7ae08b;
 
     string public constant REWARD_PATH_3_5_25 = "/js-scripts/etherFiS4Rewards/KingRewards_3_5_25.json";
     string public constant REWARD_PATH_4_2_25 = "/js-scripts/etherFiS4Rewards/KingRewards_4_2_25.json";
+    string public constant REWARD_PATH_5_7_25 = "/js-scripts/etherFiS4Rewards/KingRewards_5_7_25.json";
 
     struct Vars {
         string user;
@@ -50,7 +52,7 @@ contract KingDistributionScript is Script {
         Vars memory v = Vars("", address(0), 0, "", "", "", "", "", "", "", 0, 0, 0, 0);
 
         v.projectRoot = vm.projectRoot();
-        v.claimPath = string.concat(v.projectRoot, REWARD_PATH_4_2_25);
+        v.claimPath = string.concat(v.projectRoot, REWARD_PATH_5_7_25);
         v.claims = vm.readFile(v.claimPath);
         string[] memory users = vm.parseJsonKeys(v.claims, ".");
 
@@ -72,7 +74,7 @@ contract KingDistributionScript is Script {
                 v.root = vm.parseJsonBytes32(v.claims, v.rootPath);
                 bytes32[] memory proof = vm.parseJsonBytes32Array(v.claims, v.proofPath);
 
-                require(v.root == EXPECTED_ROOT_4_2_25, "wrong root");
+                require(v.root == EXPECTED_ROOT_5_7_25, "wrong root");
 
                 v.cumulativeClaimed = lrt2Claim.cumulativeClaimed(v.userAdd);
 
