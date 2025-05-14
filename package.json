@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "generate-etherfi-s4-batches": "bun run js-scripts/etherFiS4Rewards/createSafeBatch.ts",
-    "generate-merkle-tree": "bun run js-scripts/generateRedemptionRights/index.ts"
+    "generate-merkle-tree": "bun run js-scripts/generateRedemptionRights/index.ts",
+    "resolve-s1-registration": "bun run js-scripts/resolvS1Registration/resolveS1Registration.ts"
   },
   "devDependencies": {
     "bun-types": "latest"
@@ -13,11 +14,12 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@morpho-labs/gnosis-tx-builder": "^2.0.0",
+    "@safe-global/protocol-kit": "^6.0.4",
     "dotenv": "^16.3.1",
+    "ethers": "^6.13.2",
     "lossless-json": "^4.0.2",
     "merkletreejs": "^0.4.0",
-    "viem": "^2.21.25",
-    "@morpho-labs/gnosis-tx-builder": "^2.0.0",
-    "ethers": "^6.13.2"
+    "viem": "^2.21.25"
   }
 }
