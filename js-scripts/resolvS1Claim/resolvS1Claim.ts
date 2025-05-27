@@ -195,7 +195,7 @@ const generateSafeBatch = async () => {
   );
 
   // Write the result to a file in the safe-batches folder
-  const outputPath = path.join(safeBatchesFolder, `resolvS1Registration.json`);
+  const outputPath = path.join(safeBatchesFolder, `resolvS1ClaimBatch.json`);
   await fs.writeFile(outputPath, JSON.stringify(batchJson, null, 2));
 };
 
