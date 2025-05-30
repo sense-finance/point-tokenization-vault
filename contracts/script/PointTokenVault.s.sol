@@ -29,36 +29,45 @@ contract PointTokenVaultScripts is BatchScript {
     address public MAINNET_MERKLE_UPDATER = 0xfDE9f367c933A7D7E7348D4a3e6e096d814F5828;
     address public MAINNET_OPERATOR = 0x0c0264Ba7799dA7aF0fd141ba5Ba976E6DcC6C17;
     address public MAINNET_ADMIN = 0x9D89745fD63Af482ce93a9AdB8B0BbDbb98D3e06;
-    address public FEE_COLLECTOR = MAINNET_ADMIN;
+
+    // Hype addresses
+    address public HYPE_OPERATOR = 0x200F8df85C37268F39e3Fae332E91730A2d049d5;
+    address public HYPE_ADMIN = 0x3ffd3d3695Ee8D51A54b46e37bACAa86776A8CDA;
+    address public HYPE_MERKLE_UPDATER = 0x800e8022528c36273044e144580859EA629e1B63;
+
+    address public FEE_COLLECTOR = HYPE_ADMIN;
 
     function run() public returns (address) {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
 
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy implementation and proxy, return proxy
-        PointTokenVault pointTokenVault = runDeploy();
+        PointTokenVault pointTokenVault = runDeploy(deployer);
 
         // Set roles
-        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), MAINNET_MERKLE_UPDATER);
-        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), MAINNET_ADMIN);
-        pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), MAINNET_OPERATOR);
+        pointTokenVault.grantRole(pointTokenVault.MERKLE_UPDATER_ROLE(), HYPE_MERKLE_UPDATER);
+        pointTokenVault.grantRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), HYPE_ADMIN);
+        pointTokenVault.grantRole(pointTokenVault.OPERATOR_ROLE(), HYPE_OPERATOR);
+
+        require(pointTokenVault.hasRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), deployer), "Deployer role not set");
 
         // Remove deployer
-        pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender);
+        pointTokenVault.revokeRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), deployer);
 
-        require(!pointTokenVault.hasRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), msg.sender), "Deployer role not removed");
+        require(!pointTokenVault.hasRole(pointTokenVault.DEFAULT_ADMIN_ROLE(), deployer), "Deployer role not removed");
 
         vm.stopBroadcast();
 
         return address(pointTokenVault);
     }
 
-    function runDeploy() public returns (PointTokenVault) {
+    function runDeploy(address deployer) public returns (PointTokenVault) {
         PointTokenVault pointTokenVault = PointTokenVault(
             payable(
                 Upgrades.deployUUPSProxy(
-                    "PointTokenVault.sol", abi.encodeCall(PointTokenVault.initialize, (msg.sender, FEE_COLLECTOR))
+                    "PointTokenVault.sol", abi.encodeCall(PointTokenVault.initialize, (deployer, FEE_COLLECTOR))
                 )
             )
         );
