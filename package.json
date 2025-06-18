@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "generate-etherfi-s4-batches": "bun run js-scripts/etherFiS4Rewards/createSafeBatch.ts",
-    "generate-merkle-tree": "bun run js-scripts/generateRedemptionRights/index.ts"
+    "generate-merkle-tree": "bun run js-scripts/generateRedemptionRights/index.ts",
+    "king-s5-rewards": "bun run js-scripts/etherFiS4Rewards/s5Rewards.ts"
   },
   "devDependencies": {
     "bun-types": "latest"
