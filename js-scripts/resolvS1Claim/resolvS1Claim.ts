@@ -201,4 +201,4 @@ const generateSafeBatch = async () => {
 
 // await writeClaimResponses();
 // await writeS1TotalFinalPoints();
-await generateSafeBatch();
+// await generateSafeBatch();
