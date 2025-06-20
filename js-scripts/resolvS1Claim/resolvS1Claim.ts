@@ -191,11 +191,11 @@ const generateSafeBatch = async () => {
   // Create safe-batches in working directory if it doesn't exist
   const safeBatchesFolder = path.join(
     process.cwd(),
-    "/js-scripts/etherFiRewards/safe-batches"
+    "/js-scripts/resolvS1Claim/safe-batches"
   );
 
   // Write the result to a file in the safe-batches folder
-  const outputPath = path.join(safeBatchesFolder, `etherFiS5ClaimBatch.json`);
+  const outputPath = path.join(safeBatchesFolder, `resolvS1ClaimBatch.json`);
   await fs.writeFile(outputPath, JSON.stringify(batchJson, null, 2));
 };
 
