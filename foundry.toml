@@ -22,6 +22,7 @@ fs_permissions = [{ access = "read", path = "./js-scripts/generateRedemptionRigh
 { access = "read", path = "js-scripts/etherFiS4Rewards/KingRewards_3_5_25.json" },
 { access = "read", path = "js-scripts/etherFiS4Rewards/KingRewards_4_2_25.json" },
 { access = "read", path = "js-scripts/etherFiS4Rewards/KingRewards_5_7_25.json" },
+{ access = "read", path = "js-scripts/etherFiS4Rewards/KingRewards_6_17_25.json" },
 { access = "read", path = "./out/PointTokenVault.sol/PointTokenVault.json" }]
 optimize = true
 optimizer_runs = 100
