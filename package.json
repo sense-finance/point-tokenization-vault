@@ -7,7 +7,8 @@
     "generate-merkle-tree": "bun run js-scripts/generateRedemptionRights/index.ts",
     "resolve-s1-registration": "bun run js-scripts/resolvS1Registration/resolveS1Registration.ts",
     "resolve-s1-get-claim-data": "bun run js-scripts/resolvS1Claim/resolvS1Claim.ts",
-    "resolve-s1-withdrawal": "bun run js-scripts/resolveS1Withdraw/resolveS1Withdraw.ts"
+    "resolve-s1-withdrawal": "bun run js-scripts/resolveS1Withdraw/resolveS1Withdraw.ts",
+    "resolve-s2-claim": "bun run js-scripts/resolvS2Claim/resolvS2Claim.ts"
   },
   "devDependencies": {
     "bun-types": "latest"
