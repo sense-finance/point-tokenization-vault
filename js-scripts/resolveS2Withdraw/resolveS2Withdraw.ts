@@ -159,17 +159,22 @@ const main = async () => {
   }
 
   const rewardsTokens = Number(formatUnits(totalRewards, 18));
-  const pointsPerReward = rewardsTokens === 0 ? 0 : totalPoints / rewardsTokens;
-  const rewardPerPoint = totalPoints === 0 ? 0 : rewardsTokens / totalPoints;
-  const rewardPerPointScaled =
-    totalPoints === 0 ? 0n : totalRewards / BigInt(totalPoints);
+  const kPoints = totalPoints / 1000;
+  const rewardPerKPoint = kPoints === 0 ? 0 : rewardsTokens / kPoints;
+
+  // Calculate reward per kPoint scaled to 1e18: (totalRewards * 1000) / totalPoints
+  // Note: totalRewards is already in wei (1e18), so we just need to multiply by 1000 for kPoints
+  const rewardPerKPointScaled =
+    totalPoints === 0
+      ? 0n
+      : (totalRewards * BigInt(1000)) / BigInt(totalPoints) - 1n;
 
   console.log(`Processed ${rows.length} safes`);
   console.log(`Total rewards: ${rewardsTokens}`);
   console.log(`Total points: ${totalPoints}`);
-  console.log(`Points per reward: ${pointsPerReward}`);
-  console.log(`Reward per point: ${rewardPerPoint}`);
-  console.log(`Reward per point (1e18 scaled): ${rewardPerPointScaled}`);
+  console.log(`Total kPoints: ${kPoints}`);
+  console.log(`Reward per kPoint: ${rewardPerKPoint}`);
+  console.log(`Reward per kPoint (1e18 scaled): ${rewardPerKPointScaled}`);
   if (missingPoints.length) {
     console.warn(`Missing points for ${missingPoints.length} safes`);
     console.warn(JSON.stringify(missingPoints, null, 2));
