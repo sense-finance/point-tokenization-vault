@@ -86,10 +86,10 @@ const main = async () => {
     withdrawInterface,
     provider
   );
-  const withdrawCalldata = withdrawInterface.encodeFunctionData(
-    "withdraw",
-    [false, RUMPEL_VAULT]
-  );
+  const withdrawCalldata = withdrawInterface.encodeFunctionData("withdraw", [
+    false,
+    RUMPEL_VAULT,
+  ]);
 
   const latestBlock = await provider.getBlock("latest");
   const now = latestBlock?.timestamp ?? 0;
@@ -97,9 +97,14 @@ const main = async () => {
   let totalRewards = 0n;
   let totalPoints = 0;
 
+  for (const pointsAmount of Object.values(points)) {
+    totalPoints += pointsAmount;
+  }
+
   const rows: Array<Record<string, unknown>> = [];
   const txs: Array<{ to: string; value: string; data: string }> = [];
   const missingPoints: string[] = [];
+  const processedSafes = new Set<string>();
 
   for (const [safe, payload] of Object.entries(claims)) {
     const userData = await contract.usersData(safe);
@@ -121,9 +126,9 @@ const main = async () => {
       missingPoints.push(safe);
     }
     const pointsForSafe = hasPoints ? points[key] : 0;
+    processedSafes.add(key);
 
     totalRewards += withdrawalAmount;
-    totalPoints += pointsForSafe;
 
     txs.push({
       to: RUMPEL_MODULE,
@@ -138,6 +143,19 @@ const main = async () => {
       matches: amountMatchesClaim,
       cooldownRemaining: cooldownEnd - now,
     });
+  }
+
+  // Add wallets that have points but no rewards/claims
+  for (const [address, pointsAmount] of Object.entries(points)) {
+    if (!processedSafes.has(address)) {
+      rows.push({
+        safe: address,
+        points: pointsAmount,
+        rewards: 0,
+        matches: "N/A",
+        cooldownRemaining: "N/A",
+      });
+    }
   }
 
   const rewardsTokens = Number(formatUnits(totalRewards, 18));
