@@ -58,12 +58,12 @@ const CONFIG = {
   DISTRIBUTION_TIMESTAMP: undefined as string | undefined,
   ETHENA_MERKLE_ROOT:
     "0x3d99219fbd49ace3f48d6ca1340e505ec1bdf27d1f8d0e15ec9f286cc9215fcd" as string,
-  LIMIT: undefined as number | undefined,
   SIMULATE: false,
 };
 const POINT_ID_ETHENA_S4 =
   "0x1552756d70656c206b50743a20457468656e61205334086b70534154532d3400";
 const CLAIM_SELECTOR = "0x8132b321";
+const ETHENA_S4_CLAIM_CONTRACT = "0xC3b7D4ada2Af58E6dc7b4fb303A0de47Ade894C9" as const;
 const abiCoder = AbiCoder.defaultAbiCoder();
 
 const publicClient = createPublicClient({
@@ -148,11 +148,7 @@ function encodeClaimData(record: WalletClaim): Hex {
 
 async function simulateClaim(address: Hex, data: Hex): Promise<boolean> {
   try {
-    await publicClient.call({
-      account: address,
-      to: "0xC3b7D4ada2Af58E6dc7b4fb303A0de47Ade894C9",
-      data,
-    });
+    await publicClient.call({ account: address, to: ETHENA_S4_CLAIM_CONTRACT, data });
     return true;
   } catch (error) {
     console.warn(
@@ -183,7 +179,6 @@ function writeBatch(
 
 async function main() {
   const desiredTimestamp = CONFIG.DISTRIBUTION_TIMESTAMP;
-  const limit = CONFIG.LIMIT;
   const simulate = CONFIG.SIMULATE;
   const ethenaRoot = CONFIG.ETHENA_MERKLE_ROOT;
   if (!ethenaRoot) {
@@ -215,9 +210,7 @@ async function main() {
     })
     .map(([address]) => getAddress(address) as Hex);
 
-  const slice = limit && limit > 0 ? addresses.slice(0, limit) : addresses;
-
-  if (slice.length === 0) {
+  if (addresses.length === 0) {
     console.log("No wallets with Ethena S4 balances found");
     return;
   }
@@ -225,12 +218,12 @@ async function main() {
   console.log(
     `Distribution: ${timestamp} (ui root ${meta.root}, ethena root ${ethenaRoot})`
   );
-  console.log(`Wallets to process: ${slice.length}`);
+  console.log(`Wallets to process: ${addresses.length}`);
 
   const claims: WalletClaim[] = [];
   let total = 0n;
 
-  for (const address of slice) {
+  for (const address of addresses) {
     const event = await fetchEthenaEvent(address, ethenaRoot);
     if (!event) continue;
     const amount = BigInt(event.awardAmount);
@@ -275,7 +268,7 @@ async function main() {
       [
         {
           safe: record.address,
-          to: "0xC3b7D4ada2Af58E6dc7b4fb303A0de47Ade894C9",
+          to: ETHENA_S4_CLAIM_CONTRACT,
           data: claimData,
           operation: 0,
         },
