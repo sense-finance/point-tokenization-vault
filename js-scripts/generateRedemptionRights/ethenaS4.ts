@@ -6,17 +6,13 @@ import {
   createPublicClient,
   decodeEventLog,
   encodePacked,
-  getContract,
   http,
   keccak256,
   parseAbiItem,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { MerkleTree } from "merkletreejs";
-import { pointTokenVaultABI } from "./abis/point-token-vault.ts";
 
-// Minimal, inline-config generator for Ethena S4 Redemption Rights
-// Edit these constants directly before running.
 const CONFIG = {
   RPC_URL: process.env.MAINNET_RPC_URL || "https://ethereum-rpc.publicnode.com",
   POINT_TOKEN_VAULT: "0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61" as Address, // Rumpel vault
