@@ -10,7 +10,8 @@
     "resolve-s1-registration": "bun run js-scripts/resolvS1Registration/resolveS1Registration.ts",
     "resolve-s1-withdrawal": "bun run js-scripts/resolveS1Withdraw/resolveS1Withdraw.ts",
     "resolve-s2-claim": "bun run js-scripts/resolvS2Claim/resolvS2Claim.ts",
-    "resolve-s2-withdrawal": "bun run js-scripts/resolveS2Withdraw/resolveS2Withdraw.ts"
+    "resolve-s2-withdrawal": "bun run js-scripts/resolveS2Withdraw/resolveS2Withdraw.ts",
+    "ethena-s4-rights": "bun run js-scripts/generateRedemptionRights/ethenaS4.ts"
   },
   "devDependencies": {
     "bun-types": "latest"
