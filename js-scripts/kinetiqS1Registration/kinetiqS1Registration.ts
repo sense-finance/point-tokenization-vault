@@ -96,7 +96,9 @@ function writeBatch(
   timestamp: string,
   transactions: { to: string; value: string; data: string }[]
 ): string {
-  const batch = TxBuilder.batch(HYPEREVM_ADMIN_SAFE, transactions);
+  const batch = TxBuilder.batch(HYPEREVM_ADMIN_SAFE, transactions, {
+    chainId: 999,
+  });
   const dir = path.join(
     process.cwd(),
     "js-scripts",
