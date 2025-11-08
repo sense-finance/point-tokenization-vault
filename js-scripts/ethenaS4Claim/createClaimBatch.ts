@@ -1,6 +1,6 @@
 import { TxBuilder } from "@morpho-labs/gnosis-tx-builder";
 import "dotenv/config";
-import { AbiCoder, formatUnits, getAddress } from "ethers";
+import { AbiCoder, formatUnits, getAddress, Interface } from "ethers";
 import fs from "fs";
 import path from "path";
 import { createPublicClient, http, Hex } from "viem";
@@ -64,7 +64,13 @@ const POINT_ID_ETHENA_S4 =
   "0x1552756d70656c206b50743a20457468656e61205334086b70534154532d3400";
 const CLAIM_SELECTOR = "0x8132b321";
 const ETHENA_S4_CLAIM_CONTRACT = "0xC3b7D4ada2Af58E6dc7b4fb303A0de47Ade894C9" as const;
+const SENA_TOKEN = "0x8be3460a480c80728a8c4d7a5d5303c85ba7b3b9" as const;
+const POINT_TOKEN_VAULT = "0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61" as const;
 const abiCoder = AbiCoder.defaultAbiCoder();
+
+const ERC20_INTERFACE = new Interface([
+  "function transfer(address to, uint256 amount) returns (bool)",
+]);
 
 const publicClient = createPublicClient({
   chain: mainnet,
@@ -264,12 +270,24 @@ async function main() {
 
   const txs = claims.map((record) => {
     const claimData = encodeClaimData(record);
+    const transferData = ERC20_INTERFACE.encodeFunctionData("transfer", [
+      POINT_TOKEN_VAULT,
+      record.amount,
+    ]);
+
+    // Each wallet needs to: 1) claim sENA, 2) transfer sENA to vault
     const execData = RUMPEL_MODULE_INTERFACE.encodeFunctionData("exec", [
       [
         {
           safe: record.address,
           to: ETHENA_S4_CLAIM_CONTRACT,
           data: claimData,
+          operation: 0,
+        },
+        {
+          safe: record.address,
+          to: SENA_TOKEN,
+          data: transferData,
           operation: 0,
         },
       ],
