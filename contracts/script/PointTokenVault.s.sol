@@ -160,8 +160,8 @@ contract PointTokenVaultScripts is BatchScript {
         // PointsId for Ethena S4 pToken
         bytes32 pointsId = LibString.packTwo("Rumpel kPt: Ethena S4", "kpSATS-4");
 
-        // Full 3.5% rate (1e18 scaled), conservative floor
-        uint256 rewardsPerPToken = 15732130985341739; // ~0.015732130985341739 sENA/PT
+        // Full 3.5% rate (1e18 scaled): full_total_sENA / totalKPoints
+        uint256 rewardsPerPToken = 10691798002514229; // ~0.010691798002514229 sENA/PT
 
         // Enable redemption as merkle-based
         vm.startBroadcast(MAINNET_OPERATOR);
