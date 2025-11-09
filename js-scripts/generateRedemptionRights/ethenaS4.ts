@@ -9,9 +9,9 @@ import {
   http,
   keccak256,
   parseAbiItem,
-  zeroAddress
+  zeroAddress,
 } from "viem";
-import type { Address, } from "viem";
+import type { Address } from "viem";
 import { mainnet } from "viem/chains";
 import { MerkleTree } from "merkletreejs";
 import { pointTokenVaultABI } from "./abis/point-token-vault.ts";
@@ -59,6 +59,12 @@ if (!CONFIG.KV_URL || !CONFIG.KV_TOKEN) {
 
 type WalletMap = Record<string, Record<string, string>>;
 
+type PTokenEntry = {
+  address: Address;
+  pointsId: `0x${string}`;
+  amount: bigint;
+};
+
 async function kvGet<T>(key: string): Promise<T | null> {
   const res = await fetch(`${CONFIG.KV_URL}/get/${encodeURIComponent(key)}`, {
     headers: { Authorization: `Bearer ${CONFIG.KV_TOKEN}` },
@@ -99,15 +105,21 @@ async function main() {
   if (!wallets) throw new Error(`No wallets found for distribution ${timestamp}`);
 
   const kPoints = new Map<Address, bigint>();
+  const pTokenEntries: PTokenEntry[] = [];
   for (const [addr, points] of Object.entries(wallets)) {
-    const kp = points[CONFIG.POINTS_ID];
-    if (kp && kp !== "0") {
-      // Normalize to lowercase for consistent lookups
-      const normalized = addr.toLowerCase() as Address;
-      kPoints.set(normalized, BigInt(kp));
+    const normalized = addr.toLowerCase() as Address;
+    for (const [pointsId, amountStr] of Object.entries(points)) {
+      if (!amountStr || amountStr === "0") continue;
+      const pointKey = pointsId as `0x${string}`;
+      const amount = BigInt(amountStr);
+      pTokenEntries.push({ address: normalized, pointsId: pointKey, amount });
+      if (pointKey === CONFIG.POINTS_ID) {
+        kPoints.set(normalized, amount);
+      }
     }
   }
   console.log(`Addresses with kPoints: ${kPoints.size}`);
+  console.log(`Total pToken leaves from KV: ${pTokenEntries.length}`);
 
   // Get minted pToken balances from Transfer events
   const transferEvent = parseAbiItem(
@@ -226,7 +238,7 @@ async function main() {
 
   // Generate merkle tree
   const prefix = keccak256(encodePacked(["string"], ["REDEMPTION_RIGHTS"]));
-  const leaves = Array.from(rights.entries()).map(([addr, amt]) =>
+  const rightsLeaves = Array.from(rights.entries()).map(([addr, amt]) =>
     keccak256(
       encodePacked(
         ["bytes32", "address", "bytes32", "uint256"],
@@ -234,12 +246,26 @@ async function main() {
       )
     )
   );
-  const tree = new MerkleTree(leaves.sort(), keccak256, { sortPairs: true });
+
+  const pTokenLeaves = pTokenEntries.map((entry) =>
+    keccak256(
+      encodePacked(
+        ["address", "bytes32", "uint256"],
+        [entry.address, entry.pointsId, entry.amount]
+      )
+    )
+  );
+
+  const allLeaves = [...rightsLeaves, ...pTokenLeaves];
+  if (allLeaves.length === 0) {
+    throw new Error("Cannot build a merkle tree with zero leaves");
+  }
+  const tree = new MerkleTree(allLeaves.sort(), keccak256, { sortPairs: true });
   const root = tree.getHexRoot() as `0x${string}`;
   console.log(`Merkle root: ${root}`);
 
   // Build output
-  const out: any = { root, redemptionRights: {} };
+  const out: any = { root, redemptionRights: {}, pTokens: {} };
   for (const [addr, amt] of rights.entries()) {
     out.redemptionRights[addr] = {
       [CONFIG.POINTS_ID]: {
@@ -253,6 +279,16 @@ async function main() {
           )
         ),
       },
+    };
+  }
+
+  for (let i = 0; i < pTokenEntries.length; i++) {
+    const entry = pTokenEntries[i];
+    const leaf = pTokenLeaves[i];
+    if (!out.pTokens[entry.address]) out.pTokens[entry.address] = {};
+    out.pTokens[entry.address][entry.pointsId] = {
+      amount: entry.amount.toString(),
+      proof: tree.getHexProof(leaf),
     };
   }
 
