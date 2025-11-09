@@ -59,6 +59,7 @@ const CONFIG = {
   ETHENA_MERKLE_ROOT:
     "0x3d99219fbd49ace3f48d6ca1340e505ec1bdf27d1f8d0e15ec9f286cc9215fcd" as string,
   SIMULATE: false,
+  CLAIMS_PER_BATCH: 15,
 };
 const POINT_ID_ETHENA_S4 =
   "0x1552756d70656c206b50743a20457468656e61205334086b70534154532d3400";
@@ -168,16 +169,31 @@ function formatAmount(amount: bigint): string {
   return formatUnits(amount, 18);
 }
 
+function chunkTransactions<T>(items: T[], size: number): T[][] {
+  if (size <= 0) throw new Error("Chunk size must be positive");
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 function writeBatch(
   timestamp: string,
-  transactions: { to: string; value: string; data: string }[]
+  transactions: { to: string; value: string; data: string }[],
+  chunkIndex: number,
+  chunkCount: number
 ): string {
   const batch = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions);
   const dir = path.join(process.cwd(), "js-scripts", "ethenaS4Claim", "safe-batches");
   fs.mkdirSync(dir, { recursive: true });
+  const suffix =
+    chunkCount > 1
+      ? `_part-${String(chunkIndex + 1).padStart(2, "0")}of${String(chunkCount).padStart(2, "0")}`
+      : "";
   const file = path.join(
     dir,
-    `EthenaS4Claims_${timestamp.replace(/[:.]/g, "-")}.json`
+    `EthenaS4Claims_${timestamp.replace(/[:.]/g, "-")}${suffix}.json`
   );
   fs.writeFileSync(file, JSON.stringify(batch, null, 2));
   return file;
@@ -295,8 +311,13 @@ async function main() {
     return { to: RUMPEL_MODULE, value: "0", data: execData };
   });
 
-  const file = writeBatch(timestamp, txs);
-  console.log(`Safe batch written to ${file}`);
+  const chunks = chunkTransactions(txs, CONFIG.CLAIMS_PER_BATCH);
+  chunks.forEach((chunk, idx) => {
+    const file = writeBatch(timestamp, chunk, idx, chunks.length);
+    console.log(
+      `Safe batch part ${idx + 1}/${chunks.length} written to ${file} (transactions: ${chunk.length})`
+    );
+  });
 }
 
 main().catch((error) => {
