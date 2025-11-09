@@ -18,17 +18,17 @@ export const KINETIQ_DOMAIN = {
   version: "1",
   chainId: 999, // HyperEVM chain ID
   salt: "0x0456c9c833dd04de820193e57bcdec9d1c2b033be28b67d37c162a78aa223af1",
-};
+} as const;
 
-// EIP-712 types for AcceptTerms
+// EIP-712 types for AcceptTerms (ordered to match Kinetiq portal prompt)
 export const ACCEPT_TERMS_TYPES = {
   AcceptTerms: [
-    { name: "message", type: "string" },
-    { name: "time", type: "uint256" },
-    { name: "cid", type: "string" },
     { name: "hyperliquidChain", type: "string" },
+    { name: "message", type: "string" },
+    { name: "cid", type: "string" },
+    { name: "time", type: "uint256" },
   ],
-};
+} as const;
 
 export const TERMS_MESSAGE = "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.";
 export const TERMS_CID = "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq";
