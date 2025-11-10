@@ -66,6 +66,52 @@ type PTokenEntry = {
   amount: bigint;
 };
 
+const safeAbi = [
+  {
+    type: "function",
+    name: "getOwners",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address[]", name: "" }],
+  },
+] as const;
+
+async function resolveClaimAddress(
+  addr: Address,
+  client: ReturnType<typeof createPublicClient>,
+  rumpelWallets: Set<Address>,
+  cache: Map<Address, Address | null>
+): Promise<Address> {
+  if (!rumpelWallets.has(addr)) return addr;
+  if (cache.has(addr)) {
+    const cached = cache.get(addr);
+    return cached ?? addr;
+  }
+  try {
+    const owners = (await client.readContract({
+      address: addr,
+      abi: safeAbi,
+      functionName: "getOwners",
+    })) as Address[];
+    if (!Array.isArray(owners) || owners.length !== 1) {
+      console.warn(
+        `Skipping owner remap for ${addr}: expected 1 Safe owner, got ${owners.length}`
+      );
+      cache.set(addr, null);
+      return addr;
+    }
+    const owner = owners[0].toLowerCase() as Address;
+    cache.set(addr, owner);
+    return owner;
+  } catch (err) {
+    console.warn(
+      `Failed to resolve Safe owner for ${addr}: ${(err as Error).message ?? err}`
+    );
+    cache.set(addr, null);
+    return addr;
+  }
+}
+
 async function kvGet<T>(key: string): Promise<T | null> {
   const res = await fetch(`${CONFIG.KV_URL}/get/${encodeURIComponent(key)}`, {
     headers: { Authorization: `Bearer ${CONFIG.KV_TOKEN}` },
@@ -106,9 +152,11 @@ async function main() {
   if (!wallets) throw new Error(`No wallets found for distribution ${timestamp}`);
 
   const kPoints = new Map<Address, bigint>();
+  const rumpelWallets = new Set<Address>();
   const pTokenEntries: PTokenEntry[] = [];
   for (const [addr, points] of Object.entries(wallets)) {
     const normalized = addr.toLowerCase() as Address;
+    rumpelWallets.add(normalized);
     for (const [pointsId, amountStr] of Object.entries(points)) {
       if (!amountStr || amountStr === "0") continue;
       const pointKey = pointsId as `0x${string}`;
@@ -234,12 +282,19 @@ async function main() {
   const rights = new Map<Address, bigint>();
   let totalRights = 0n;
   let totalEntFull = 0n;
+  const ownerCache = new Map<Address, Address | null>();
 
   for (const [addr, bal] of totalBalances.entries()) {
     const full = entitlementFull(bal);
     const now = rightsNow(full);
     if (now > 0n) {
-      rights.set(addr, now);
+      const claimAddr = await resolveClaimAddress(
+        addr,
+        client,
+        rumpelWallets,
+        ownerCache
+      );
+      rights.set(claimAddr, (rights.get(claimAddr) || 0n) + now);
       totalRights += now;
       totalEntFull += full;
     }
