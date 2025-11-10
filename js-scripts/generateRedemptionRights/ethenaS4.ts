@@ -8,7 +8,6 @@ import {
   getContract,
   http,
   keccak256,
-  parseAbi,
   parseAbiItem,
   zeroAddress,
 } from "viem";
@@ -49,157 +48,23 @@ const CONFIG = {
 };
 
 const WAD = 10n ** 18n;
-const UNI_ANALYTICS_URL = "https://omni.v2.icarus.tools/ethereum";
-const UNISWAP_FACTORY = "0x1F98431c8aD98523631AE4a59f267346ea31F984";
-const UNISWAP_FEE = 10000;
-const SENA_TOKEN = "0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9" as Address;
-const uniswapFactoryAbi = parseAbi([
-  "function getPool(address tokenA, address tokenB, uint24 fee) view returns (address)",
-]);
+// Ethena 1% pool (kpSATS-4/sENA) currently has a single LP; redirect its kpSATS balance so the LP can redeem.
+const OVERRIDES: Record<string, Record<string, string>> = {
+  "0x4d5a1035c8d44163c554ec8027b5db8c819c66b2": {
+    "0x369fd6445f24d84dd4b82293389bc5d727380180": "18733133460590127477466",
+  },
+};
 
 if (!CONFIG.KV_URL || !CONFIG.KV_TOKEN) {
   throw new Error("Missing KV_REST_API_URL or KV_REST_API_TOKEN");
 }
 
 type WalletMap = Record<string, Record<string, string>>;
-type OverrideMap = Record<string, Record<string, string>>;
-
 type PTokenEntry = {
   address: Address;
   pointsId: `0x${string}`;
   amount: bigint;
 };
-
-async function resolveUniPoolAddress(client: ReturnType<typeof createPublicClient>): Promise<Address | null> {
-  try {
-    const pool = (await client.readContract({
-      address: UNISWAP_FACTORY,
-      abi: uniswapFactoryAbi,
-      functionName: "getPool",
-      args: [CONFIG.PTOKEN_ADDRESS, SENA_TOKEN, UNISWAP_FEE],
-    })) as Address;
-    return pool.toLowerCase() === zeroAddress.toLowerCase()
-      ? null
-      : (pool.toLowerCase() as Address);
-  } catch (err) {
-    console.warn(
-      `Failed to resolve Uniswap pool: ${(err as Error).message ?? err}`
-    );
-    return null;
-  }
-}
-
-async function fetchUniPoolOverrides(
-  poolAddress: Address,
-  mintedBalance: bigint
-): Promise<OverrideMap> {
-  try {
-    if (mintedBalance === 0n) return {};
-    const positions = await loadUniPositions(poolAddress);
-    if (positions.length === 0) {
-      console.warn("UNI overrides: no LP positions returned");
-      return {};
-    }
-
-    const totalLiquidity = positions.reduce(
-      (acc, position) => acc + position.liquidity,
-      0n
-    );
-    if (totalLiquidity === 0n) {
-      console.warn("UNI overrides: total liquidity is zero");
-      return {};
-    }
-
-    const redistribution = new Map<Address, bigint>();
-    for (const position of positions) {
-      if (position.liquidity === 0n) continue;
-      const amount = (position.liquidity * mintedBalance) / totalLiquidity;
-      if (amount <= 0n) continue;
-      const owner = position.owner.toLowerCase() as Address;
-      redistribution.set(owner, (redistribution.get(owner) || 0n) + amount);
-    }
-
-    if (redistribution.size === 0) {
-      console.warn("UNI overrides: no active LP balances found");
-      return {};
-    }
-
-    const formatted: Record<string, string> = {};
-    for (const [addr, amt] of redistribution.entries()) {
-      formatted[addr] = amt.toString();
-    }
-    return { [poolAddress]: formatted };
-  } catch (err) {
-    console.warn(
-      `Failed to fetch UNI LP overrides: ${(err as Error).message ?? err}`
-    );
-    console.warn(err);
-    return {};
-  }
-}
-
-async function loadUniPositions(poolAddress: Address): Promise<
-  Array<{
-    owner: Address;
-    liquidity: bigint;
-    tickLower: number;
-    tickUpper: number;
-  }>
-> {
-  const payload = {
-    id: 1,
-    jsonrpc: "2.0",
-    method: "cush_topPositions",
-    params: [{ pool: poolAddress, limit: 200 }],
-  };
-  const res = await fetch(UNI_ANALYTICS_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    throw new Error(`Icarus request failed (${res.status})`);
-  }
-  const body = (await res.json()) as {
-    result?: { positions?: Array<Record<string, any>> };
-    error?: { message?: string };
-  };
-  if (body.error) {
-    throw new Error(body.error.message || "Unknown Icarus error");
-  }
-  const positions = body.result?.positions;
-  if (!positions || positions.length === 0) return [];
-  const parsed = [];
-  for (const position of positions) {
-    const pool = (position.pool as string | undefined)?.toLowerCase();
-    if (pool !== poolAddress) continue;
-    const owner = (position.user as string | undefined)?.toLowerCase();
-    if (!owner) continue;
-    const rawLiquidity =
-      (position.total_liquidity as string | undefined) ||
-      (position.liquidity as string | undefined) ||
-      "0";
-    let liquidity: bigint;
-    try {
-      liquidity = BigInt(rawLiquidity);
-    } catch {
-      console.warn(
-        `Skipping position ${position.token_id ?? "unknown"} due to invalid liquidity ${rawLiquidity}`
-      );
-      continue;
-    }
-    const tickLower = Number(position.tickLower);
-    const tickUpper = Number(position.tickUpper);
-    if (!Number.isFinite(tickLower) || !Number.isFinite(tickUpper)) continue;
-    parsed.push({
-      owner: owner as Address,
-      liquidity,
-      tickLower,
-      tickUpper,
-    });
-  }
-  return parsed;
-}
 
 async function kvGet<T>(key: string): Promise<T | null> {
   const res = await fetch(`${CONFIG.KV_URL}/get/${encodeURIComponent(key)}`, {
@@ -291,18 +156,7 @@ async function main() {
   }
   console.log(`Holders with minted pTokens: ${Array.from(mintedBalances.values()).filter(b => b > 0n).length}`);
 
-  const uniPoolAddress = await resolveUniPoolAddress(client);
-  let uniPoolBalance = 0n;
-  if (uniPoolAddress) {
-    uniPoolBalance = mintedBalances.get(uniPoolAddress) || 0n;
-    console.log(`Minted balance at UNI pool ${uniPoolAddress}: ${uniPoolBalance}`);
-  } else {
-    console.warn("No UNI pool found for kpSATS-4/sENA");
-  }
-
-  const overrides = uniPoolAddress
-    ? await fetchUniPoolOverrides(uniPoolAddress, uniPoolBalance)
-    : {};
+  const overrides = OVERRIDES;
 
   // Apply overrides
   for (const [contractAddr, redistributions] of Object.entries(overrides)) {
