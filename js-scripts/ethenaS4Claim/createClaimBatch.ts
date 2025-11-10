@@ -1,0 +1,326 @@
+import { TxBuilder } from "@morpho-labs/gnosis-tx-builder";
+import "dotenv/config";
+import { AbiCoder, formatUnits, getAddress, Interface } from "ethers";
+import fs from "fs";
+import path from "path";
+import { createPublicClient, http, Hex } from "viem";
+import { mainnet } from "viem/chains";
+
+import {
+  RUMPEL_ADMIN_SAFE,
+  RUMPEL_MODULE,
+  RUMPEL_MODULE_INTERFACE,
+} from "../resolvS1Registration/resolveS1Constants";
+
+type DistributionMeta = {
+  timestamp: string;
+  root?: string;
+};
+
+type WalletMap = Record<string, Record<string, string>>;
+
+type EthenaEvent = {
+  proofs: string[];
+  awardAmount: string;
+  releaseTime: number;
+};
+
+type EthenaResponse = {
+  events?: EthenaEvent[];
+  claimed?: boolean;
+};
+
+type WalletClaim = {
+  address: Hex;
+  amount: bigint;
+  release: bigint;
+  proof: string[];
+};
+
+const {
+  KV_REST_API_URL: kvUrl,
+  KV_REST_API_TOKEN: kvToken,
+  MAINNET_RPC_URL: rpcUrl,
+} = process.env;
+
+if (!kvUrl || !kvToken) {
+  throw new Error("Missing KV_REST_API_URL or KV_REST_API_TOKEN");
+}
+
+const KV_URL = kvUrl.replace(/\/$/, "");
+const KV_TOKEN = kvToken;
+const RPC_URL = rpcUrl || "https://ethereum-rpc.publicnode.com";
+const ETHENA_DATA_BASE =
+  "https://airdrop-data-ethena-s4.s3.us-west-2.amazonaws.com";
+
+// Edit these toggles directly before running the script.
+const CONFIG = {
+  DISTRIBUTION_TIMESTAMP: undefined as string | undefined,
+  ETHENA_MERKLE_ROOT:
+    "0x3d99219fbd49ace3f48d6ca1340e505ec1bdf27d1f8d0e15ec9f286cc9215fcd" as string,
+  SIMULATE: false,
+  CLAIMS_PER_BATCH: 15,
+};
+const POINT_ID_ETHENA_S4 =
+  "0x1552756d70656c206b50743a20457468656e61205334086b70534154532d3400";
+const CLAIM_SELECTOR = "0x8132b321";
+const ETHENA_S4_CLAIM_CONTRACT = "0xC3b7D4ada2Af58E6dc7b4fb303A0de47Ade894C9" as const;
+const SENA_TOKEN = "0x8be3460a480c80728a8c4d7a5d5303c85ba7b3b9" as const;
+const POINT_TOKEN_VAULT = "0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61" as const;
+const abiCoder = AbiCoder.defaultAbiCoder();
+
+const ERC20_INTERFACE = new Interface([
+  "function transfer(address to, uint256 amount) returns (bool)",
+]);
+
+const publicClient = createPublicClient({
+  chain: mainnet,
+  transport: http(RPC_URL),
+});
+
+async function kvGet<T>(key: string): Promise<T | null> {
+  const url = `${KV_URL}/get/${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+  });
+  if (!res.ok) {
+    throw new Error(`KV get failed for ${key}: ${res.status} ${res.statusText}`);
+  }
+  const json = (await res.json()) as { result?: T };
+  const value = json.result;
+  if (value == null) return null;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return value as T;
+    }
+  }
+  return value;
+}
+
+async function fetchDistribution(timestamp: string): Promise<DistributionMeta> {
+  const meta = await kvGet<DistributionMeta>(`distributions:${timestamp}`);
+  if (!meta) throw new Error(`Distribution ${timestamp} not found`);
+  if (!meta.root) throw new Error(`Distribution ${timestamp} missing root`);
+  return meta;
+}
+
+async function fetchWallets(timestamp: string): Promise<WalletMap> {
+  const wallets = await kvGet<WalletMap>(
+    `distributions:${timestamp}:wallets`
+  );
+  if (!wallets) {
+    throw new Error(`Distribution ${timestamp} has no wallet snapshot`);
+  }
+  return wallets;
+}
+
+async function fetchEthenaEvent(
+  address: Hex,
+  root: string
+): Promise<EthenaEvent | null> {
+  const folder = getAddress(address);
+  const url = `${ETHENA_DATA_BASE}/${folder}/${root}-${folder}.json`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.warn(`skipping ${folder} (S3 ${res.status})`);
+    return null;
+  }
+  const json = (await res.json()) as EthenaResponse;
+  const event = json.events && json.events[0];
+  if (!event) return null;
+  if (json.claimed) {
+    console.log(`already claimed, skipping ${folder}`);
+    return null;
+  }
+  return event;
+}
+
+function encodeClaimData(record: WalletClaim): Hex {
+  const { address, amount, release, proof } = record;
+  const encodedArgs = abiCoder.encode(
+    [
+      "address[]",
+      "uint256[]",
+      "uint256[]",
+      "uint256[]",
+      "uint256[]",
+      "bytes32[][]",
+    ],
+    [[address], [amount], [amount], [release], [0], [proof]]
+  );
+  return (CLAIM_SELECTOR + encodedArgs.slice(2)) as Hex;
+}
+
+async function simulateClaim(address: Hex, data: Hex): Promise<boolean> {
+  try {
+    await publicClient.call({ account: address, to: ETHENA_S4_CLAIM_CONTRACT, data });
+    return true;
+  } catch (error) {
+    console.warn(
+      `simulation failed for ${address}: ${(error as Error).message}`
+    );
+    return false;
+  }
+}
+
+function formatAmount(amount: bigint): string {
+  return formatUnits(amount, 18);
+}
+
+function chunkTransactions<T>(items: T[], size: number): T[][] {
+  if (size <= 0) throw new Error("Chunk size must be positive");
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function writeBatch(
+  timestamp: string,
+  transactions: { to: string; value: string; data: string }[],
+  chunkIndex: number,
+  chunkCount: number
+): string {
+  const batch = TxBuilder.batch(RUMPEL_ADMIN_SAFE, transactions);
+  const dir = path.join(process.cwd(), "js-scripts", "ethenaS4Claim", "safe-batches");
+  fs.mkdirSync(dir, { recursive: true });
+  const suffix =
+    chunkCount > 1
+      ? `_part-${String(chunkIndex + 1).padStart(2, "0")}of${String(chunkCount).padStart(2, "0")}`
+      : "";
+  const file = path.join(
+    dir,
+    `EthenaS4Claims_${timestamp.replace(/[:.]/g, "-")}${suffix}.json`
+  );
+  fs.writeFileSync(file, JSON.stringify(batch, null, 2));
+  return file;
+}
+
+async function main() {
+  const desiredTimestamp = CONFIG.DISTRIBUTION_TIMESTAMP;
+  const simulate = CONFIG.SIMULATE;
+  const ethenaRoot = CONFIG.ETHENA_MERKLE_ROOT;
+  if (!ethenaRoot) {
+    throw new Error("CONFIG.ETHENA_MERKLE_ROOT must be set");
+  }
+
+  const executed = await kvGet<string[]>("distributions:executed");
+  if (!executed || executed.length === 0) {
+    throw new Error("No executed distributions in KV");
+  }
+
+  const timestamp =
+    desiredTimestamp && executed.includes(desiredTimestamp)
+      ? desiredTimestamp
+      : executed[executed.length - 1];
+
+  if (desiredTimestamp && desiredTimestamp !== timestamp) {
+    console.warn(
+      `Configured timestamp ${desiredTimestamp} not executed. Using ${timestamp}.`
+    );
+  }
+
+  const meta = await fetchDistribution(timestamp);
+  const wallets = await fetchWallets(timestamp);
+  const addresses = Object.entries(wallets)
+    .filter(([, points]) => {
+      const value = points[POINT_ID_ETHENA_S4];
+      return value !== undefined && value !== "0";
+    })
+    .map(([address]) => getAddress(address) as Hex);
+
+  if (addresses.length === 0) {
+    console.log("No wallets with Ethena S4 balances found");
+    return;
+  }
+
+  console.log(
+    `Distribution: ${timestamp} (ui root ${meta.root}, ethena root ${ethenaRoot})`
+  );
+  console.log(`Wallets to process: ${addresses.length}`);
+
+  const claims: WalletClaim[] = [];
+  let total = 0n;
+
+  for (const address of addresses) {
+    const event = await fetchEthenaEvent(address, ethenaRoot);
+    if (!event) continue;
+    const amount = BigInt(event.awardAmount);
+    if (amount === 0n) continue;
+    const record: WalletClaim = {
+      address,
+      amount,
+      release: BigInt(event.releaseTime),
+      proof: event.proofs,
+    };
+    claims.push(record);
+    total += amount;
+  }
+
+  if (claims.length === 0) {
+    console.log("No claimable wallets after filtering");
+    return;
+  }
+
+  claims.sort((a, b) => (b.amount > a.amount ? 1 : -1));
+
+  console.log(`Collected ${claims.length} wallets worth ${formatAmount(total)} sENA`);
+  console.log("Top wallets:");
+  for (const row of claims.slice(0, 10)) {
+    console.log(`  ${row.address} -> ${formatAmount(row.amount)} sENA`);
+  }
+
+  let simPassed = 0;
+  if (simulate) {
+    for (const record of claims) {
+      const callData = encodeClaimData(record);
+      if (await simulateClaim(record.address, callData)) {
+        simPassed += 1;
+      }
+    }
+    console.log(`Simulation summary: ${simPassed}/${claims.length} passed`);
+  }
+
+  const txs = claims.map((record) => {
+    const claimData = encodeClaimData(record);
+    const transferData = ERC20_INTERFACE.encodeFunctionData("transfer", [
+      POINT_TOKEN_VAULT,
+      record.amount,
+    ]);
+
+    // Each wallet needs to: 1) claim sENA, 2) transfer sENA to vault
+    const execData = RUMPEL_MODULE_INTERFACE.encodeFunctionData("exec", [
+      [
+        {
+          safe: record.address,
+          to: ETHENA_S4_CLAIM_CONTRACT,
+          data: claimData,
+          operation: 0,
+        },
+        {
+          safe: record.address,
+          to: SENA_TOKEN,
+          data: transferData,
+          operation: 0,
+        },
+      ],
+    ]);
+    return { to: RUMPEL_MODULE, value: "0", data: execData };
+  });
+
+  const chunks = chunkTransactions(txs, CONFIG.CLAIMS_PER_BATCH);
+  chunks.forEach((chunk, idx) => {
+    const file = writeBatch(timestamp, chunk, idx, chunks.length);
+    console.log(
+      `Safe batch part ${idx + 1}/${chunks.length} written to ${file} (transactions: ${chunk.length})`
+    );
+  });
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

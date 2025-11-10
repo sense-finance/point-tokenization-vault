@@ -392,6 +392,7 @@ contract PointTokenVaultTest is Test {
 
     function test_MulticallAuth(address lad) public {
         vm.assume(lad != admin);
+        vm.assume(lad != merkleUpdater);
         // Only admin can exec
         vm.expectRevert(
             abi.encodeWithSelector(

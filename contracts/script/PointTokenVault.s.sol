@@ -150,6 +150,39 @@ contract PointTokenVaultScripts is BatchScript {
         vm.stopBroadcast();
     }
 
+    function setRedemptionEthenaS4Now() public {
+        // Rumpel mainnet vault
+        PointTokenVault vault = PointTokenVault(payable(0xe47F9Dbbfe98d6930562017ee212C1A1Ae45ba61));
+
+        // Ethena sENA token (same address used elsewhere in repo)
+        ERC20 sena = ERC20(0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9);
+
+        // PointsId for Ethena S4 pToken
+        bytes32 pointsId = LibString.packTwo("Rumpel kPt: Ethena S4", "kpSATS-4");
+
+        // Full 3.5% rate (1e18 scaled): full_total_sENA / totalKPoints
+        uint256 rewardsPerPToken = 10691798002514229; // ~0.010691798002514229 sENA/PT
+
+        // Enable redemption as merkle-based
+        vm.startBroadcast(MAINNET_OPERATOR);
+        vault.setRedemption(pointsId, sena, rewardsPerPToken, true);
+        vm.stopBroadcast();
+
+        // Load current (2.5/3.5) rights root from generator output
+        string memory p = vm.projectRoot();
+        string memory rightsPath = string.concat(
+            p,
+            "/js-scripts/generateRedemptionRights/out/ethena-s4-rights.json"
+        );
+        string memory json = vm.readFile(rightsPath);
+        bytes32 root = vm.parseJsonBytes32(json, ".root");
+
+        // Push the rights root
+        vm.startBroadcast(MAINNET_MERKLE_UPDATER);
+        vault.updateRoot(root);
+        vm.stopBroadcast();
+    }
+
     // Useful for emergencies, where we need to override both the current and previous root at once
     // For example, if minting for a specific pToken needs to be stopped, a root without any claim rights for the pToken would need to be pushed twice
     function doublePushRoot(address pointTokenVaultAddress, bytes32 newRoot, address merkleUpdaterSafe) public {
