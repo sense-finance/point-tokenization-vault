@@ -1,9 +1,9 @@
 {
   "timestamp": "2025-10-30T12:01:33.494Z",
-  "signTimestamp": 1762665065906,
-  "signTimestampIso": "2025-11-09T05:11:05.906Z",
+  "signTimestamp": 1762726431881,
+  "signTimestampIso": "2025-11-09T22:13:51.881Z",
   "pointsId": "0x1552756d70656c2050743a204b696e6574697120533108704b494e54512d3100",
-  "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+  "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
   "typedData": {
     "primaryType": "AcceptTerms",
     "domain": {
@@ -36,7 +36,7 @@
       "hyperliquidChain": "Mainnet",
       "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
       "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-      "time": "1762665065906"
+      "time": "1762726431881"
     }
   },
   "files": {
@@ -50,9 +50,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 0,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -64,9 +64,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 1,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -78,9 +78,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 2,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -92,9 +92,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 3,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -106,9 +106,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 4,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -120,9 +120,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 5,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -134,9 +134,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 6,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -148,9 +148,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 7,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -162,9 +162,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 8,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -176,9 +176,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 9,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -190,9 +190,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 10,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -204,9 +204,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 11,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -218,9 +218,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 12,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -232,9 +232,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 13,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -246,9 +246,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 14,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -260,9 +260,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 15,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -274,9 +274,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 16,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -288,9 +288,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 17,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -302,9 +302,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 18,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -316,9 +316,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 19,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -330,9 +330,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 20,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -344,9 +344,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 21,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -358,9 +358,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 22,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -372,9 +372,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 23,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -386,9 +386,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 24,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -400,9 +400,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 25,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -414,9 +414,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 26,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -428,9 +428,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 27,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -442,9 +442,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 28,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -456,9 +456,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 29,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -470,9 +470,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 30,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -484,9 +484,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 31,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -498,9 +498,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 32,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -512,9 +512,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 33,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -526,9 +526,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 34,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -540,9 +540,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 35,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -554,9 +554,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 36,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
@@ -568,9 +568,9 @@
         "hyperliquidChain": "Mainnet",
         "message": "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.",
         "cid": "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq",
-        "time": "1762665065906"
+        "time": "1762726431881"
       },
-      "hash": "0xbd1d5ca3f561e769ad66b456adcda4094c6f53a7dc8b8e424f6c7c79a3b3f242",
+      "hash": "0x3eb32f6453b8fb3ab0eef3f8290cedaa139d604a3a5c06d13364e19525f7848a",
       "batchIndex": 37,
       "signedInTransaction": null,
       "signatureEventLogIndex": null
