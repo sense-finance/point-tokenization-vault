@@ -17,3 +17,6 @@ docs/
 node_modules/
 build/
 tasks/
+
+# Certora
+.certora_internal
