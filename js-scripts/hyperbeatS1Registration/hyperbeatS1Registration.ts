@@ -2,7 +2,7 @@ import "dotenv/config";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const { TxBuilder } = require("@morpho-labs/gnosis-tx-builder");
-import { TypedDataEncoder } from "ethers";
+import { getAddress, keccak256, toUtf8Bytes } from "ethers";
 import fs from "fs";
 import path from "path";
 import {
@@ -11,19 +11,15 @@ import {
   HYPEREVM_ADMIN_SAFE,
   HYPEREVM_MODULE,
   RUMPEL_MODULE_INTERFACE,
-  KINETIQ_DOMAIN,
-  ACCEPT_TERMS_TYPES,
-  TERMS_MESSAGE,
-  TERMS_CID,
-  HYPERLIQUID_CHAIN,
-} from "./kinetiqS1Constants";
-import { POINTS_ID_KINETIQ_S1 } from "../points";
+  HYPERBEAT_TERMS_MESSAGE,
+} from "./hyperbeatS1Constants";
+import { POINTS_ID_HYPERBEAT_S1 } from "../points";
 
 const {
   KV_REST_API_URL: kvUrl,
   KV_REST_API_TOKEN: kvToken,
-  KINETIQ_DISTRIBUTION_TIMESTAMP,
-  KINETIQ_SIGNED_AT_MS,
+  HYPERBEAT_DISTRIBUTION_TIMESTAMP,
+  HYPERBEAT_SIGNED_AT_MS,
 } = process.env;
 
 if (!kvUrl || !kvToken) {
@@ -39,11 +35,16 @@ type DistributionMeta = {
 };
 
 type WalletMap = Record<string, Record<string, string>>;
-type AcceptTermsMessage = {
-  hyperliquidChain: string;
+
+type WalletSummary = {
+  address: string;
+  balance: string;
   message: string;
-  cid: string;
-  time: bigint;
+  timestamp: string;
+  hash: string;
+  batchIndex: number;
+  signedInTransaction: string | null;
+  signatureEventLogIndex: number | null;
 };
 
 async function kvGet<T>(key: string): Promise<T | null> {
@@ -83,28 +84,12 @@ async function fetchWallets(timestamp: string): Promise<WalletMap> {
   return wallets;
 }
 
-function buildTypedData(timestamp: number) {
-  const message: AcceptTermsMessage = {
-    hyperliquidChain: HYPERLIQUID_CHAIN,
-    message: TERMS_MESSAGE,
-    cid: TERMS_CID,
-    time: BigInt(timestamp),
-  };
-
-  const typedData = {
-    primaryType: "AcceptTerms" as const,
-    domain: KINETIQ_DOMAIN,
-    types: ACCEPT_TERMS_TYPES,
-    message,
-  };
-
-  const hash = TypedDataEncoder.hash(
-    typedData.domain,
-    typedData.types,
-    typedData.message
-  );
-
-  return { typedData, hash };
+function buildMessage(address: string, timestampMs: number) {
+  const checksumAddress = getAddress(address);
+  const timestampIso = new Date(timestampMs).toISOString();
+  const message = `${HYPERBEAT_TERMS_MESSAGE}\n\nAddress: ${checksumAddress}\nTimestamp: ${timestampIso}`;
+  const hash = keccak256(toUtf8Bytes(message));
+  return { message, hash, timestampIso, checksumAddress };
 }
 
 function writeBatch(
@@ -117,12 +102,12 @@ function writeBatch(
   const dir = path.join(
     process.cwd(),
     "js-scripts",
-    "kinetiqS1Registration",
+    "hyperbeatS1Registration",
     "safe-batches"
   );
   fs.mkdirSync(dir, { recursive: true });
   const sanitizedTs = timestamp.replace(/[:.]/g, "-");
-  const baseName = `KinetiqS1Registration_${sanitizedTs}`;
+  const baseName = `HyperbeatS1Registration_${sanitizedTs}`;
   const file = path.join(dir, `${baseName}.json`);
   fs.writeFileSync(file, JSON.stringify(batch, null, 2));
   return { file, baseName, dir };
@@ -131,46 +116,40 @@ function writeBatch(
 function writeSummary(options: {
   timestamp: string;
   signTimestamp: number;
-  wallets: { address: string; balance: string }[];
-  hash: string;
-  typedData: ReturnType<typeof buildTypedData>["typedData"];
+  wallets: WalletSummary[];
   batchFile: string;
   baseName: string;
   dir: string;
 }) {
-  const { timestamp, signTimestamp, wallets, hash, typedData, batchFile, baseName, dir } =
-    options;
+  const { timestamp, signTimestamp, wallets, batchFile, baseName, dir } = options;
 
-  const displayMessage = {
-    hyperliquidChain: typedData.message.hyperliquidChain,
-    message: typedData.message.message,
-    cid: typedData.message.cid,
-    time: typedData.message.time.toString(),
-  };
+  const messageExample = wallets[0]
+    ? {
+        address: wallets[0].address,
+        message: wallets[0].message,
+        timestamp: wallets[0].timestamp,
+        hash: wallets[0].hash,
+      }
+    : null;
 
   const summary = {
     timestamp,
     signTimestamp,
     signTimestampIso: new Date(signTimestamp).toISOString(),
-    pointsId: POINTS_ID_KINETIQ_S1,
-    hash,
-    typedData: {
-      primaryType: typedData.primaryType,
-      domain: typedData.domain,
-      types: typedData.types,
-      message: displayMessage,
-    },
+    pointsId: POINTS_ID_HYPERBEAT_S1,
+    messageExample,
     files: {
       batch: path.basename(batchFile),
     },
-    wallets: wallets.map(({ address, balance }, batchIndex) => ({
-      address,
-      kinetiqPoints: balance,
-      rawData: { ...displayMessage },
-      hash,
-      batchIndex,
-      signedInTransaction: null as string | null,
-      signatureEventLogIndex: null as number | null,
+    wallets: wallets.map((wallet) => ({
+      address: wallet.address,
+      hyperbeatPoints: wallet.balance,
+      message: wallet.message,
+      timestamp: wallet.timestamp,
+      hash: wallet.hash,
+      batchIndex: wallet.batchIndex,
+      signedInTransaction: wallet.signedInTransaction,
+      signatureEventLogIndex: wallet.signatureEventLogIndex,
     })),
   };
 
@@ -180,63 +159,62 @@ function writeSummary(options: {
 }
 
 async function main() {
-  // Fetch executed distributions from HyperEVM (with hl: prefix)
   const executed = await kvGet<string[]>("hl:distributions:executed");
   if (!executed || executed.length === 0) {
     throw new Error("No executed distributions in KV for HyperEVM");
   }
 
   const timestamp =
-    KINETIQ_DISTRIBUTION_TIMESTAMP && executed.includes(KINETIQ_DISTRIBUTION_TIMESTAMP)
-      ? KINETIQ_DISTRIBUTION_TIMESTAMP
+    HYPERBEAT_DISTRIBUTION_TIMESTAMP && executed.includes(HYPERBEAT_DISTRIBUTION_TIMESTAMP)
+      ? HYPERBEAT_DISTRIBUTION_TIMESTAMP
       : executed[executed.length - 1];
 
-  if (KINETIQ_DISTRIBUTION_TIMESTAMP && KINETIQ_DISTRIBUTION_TIMESTAMP !== timestamp) {
+  if (HYPERBEAT_DISTRIBUTION_TIMESTAMP && HYPERBEAT_DISTRIBUTION_TIMESTAMP !== timestamp) {
     console.warn(
-      `Provided timestamp ${KINETIQ_DISTRIBUTION_TIMESTAMP} not executed. Using ${timestamp}.`
+      `Provided timestamp ${HYPERBEAT_DISTRIBUTION_TIMESTAMP} not executed. Using ${timestamp}.`
     );
   }
 
   const meta = await fetchDistribution(timestamp);
   const wallets = await fetchWallets(timestamp);
 
-  // Filter addresses with positive Kinetiq S1 balances
-  const walletsWithKinetiq = Object.entries(wallets)
+  const walletsWithHyperbeat = Object.entries(wallets)
     .map(([address, points]) => {
-      const value = points[POINTS_ID_KINETIQ_S1];
+      const value = points[POINTS_ID_HYPERBEAT_S1];
       if (value === undefined || value === "0") return null;
       return { address, balance: value };
     })
     .filter((entry): entry is { address: string; balance: string } => entry !== null);
 
-  if (walletsWithKinetiq.length === 0) {
-    console.log("No wallets with Kinetiq S1 balances found");
+  if (walletsWithHyperbeat.length === 0) {
+    console.log("No wallets with Hyperbeat S1 balances found");
     return;
   }
 
   console.log(`Distribution: ${timestamp} (root: ${meta.root || "N/A"})`);
-  console.log(`Wallets to process: ${walletsWithKinetiq.length}`);
+  console.log(`Wallets to process: ${walletsWithHyperbeat.length}`);
 
-  // Use provided timestamp override or capture the current queue time
-  const manualSignedAt = KINETIQ_SIGNED_AT_MS ? Number(KINETIQ_SIGNED_AT_MS) : undefined;
-  if (KINETIQ_SIGNED_AT_MS && Number.isNaN(manualSignedAt)) {
-    throw new Error(`Invalid KINETIQ_SIGNED_AT_MS value: ${KINETIQ_SIGNED_AT_MS}`);
+  const manualSignedAt = HYPERBEAT_SIGNED_AT_MS ? Number(HYPERBEAT_SIGNED_AT_MS) : undefined;
+  if (HYPERBEAT_SIGNED_AT_MS && Number.isNaN(manualSignedAt)) {
+    throw new Error(`Invalid HYPERBEAT_SIGNED_AT_MS value: ${HYPERBEAT_SIGNED_AT_MS}`);
   }
   const signTimestamp = manualSignedAt ?? Date.now();
   const transactions: { to: string; value: string; data: string }[] = [];
+  const walletSummaries: WalletSummary[] = [];
 
-  // Create single EIP-712 hash that all wallets will sign
-  // The wallet address is bound via Safe's ERC-1271 verification, not in the typed data
-  const { typedData, hash: messageHash } = buildTypedData(signTimestamp);
+  for (const { address, balance } of walletsWithHyperbeat) {
+    const batchIndex = transactions.length;
 
-  for (const { address, balance } of walletsWithKinetiq) {
-    // Encode signMessage call
+    const { message, hash: messageHash, timestampIso, checksumAddress } = buildMessage(
+      address,
+      signTimestamp
+    );
+
     const signMessageData = SIGN_MESSAGE_LIB_INTERFACE.encodeFunctionData(
       "signMessage",
       [messageHash]
     );
 
-    // Encode exec call to Rumpel module
     const executeTransactionData = RUMPEL_MODULE_INTERFACE.encodeFunctionData(
       "exec",
       [
@@ -245,7 +223,7 @@ async function main() {
             safe: address,
             to: SIGN_MESSAGE_LIB,
             data: signMessageData,
-            operation: 1, // Delegatecall
+            operation: 1,
           },
         ],
       ]
@@ -257,16 +235,25 @@ async function main() {
       data: executeTransactionData,
     });
 
-    console.log(`${address}: ${balance} Kinetiq points`);
+    walletSummaries.push({
+      address: checksumAddress,
+      balance,
+      message,
+      timestamp: timestampIso,
+      hash: messageHash,
+      batchIndex,
+      signedInTransaction: null,
+      signatureEventLogIndex: null,
+    });
+
+    console.log(`${address}: ${balance} Hyperbeat points`);
   }
 
   const { file: batchFile, baseName, dir } = writeBatch(timestamp, transactions);
   const summaryFile = writeSummary({
     timestamp,
     signTimestamp,
-    wallets: walletsWithKinetiq,
-    hash: messageHash,
-    typedData,
+    wallets: walletSummaries,
     batchFile,
     baseName,
     dir,

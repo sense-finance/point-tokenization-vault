@@ -1,4 +1,4 @@
-import { Interface } from "ethers";
+import { Interface, type TypedDataField } from "ethers";
 
 export const SIGN_MESSAGE_LIB = "0x98FFBBF51bb33A056B08ddf711f289936AafF717";
 export const HYPEREVM_ADMIN_SAFE = "0x3ffd3d3695Ee8D51A54b46e37bACAa86776A8CDA";
@@ -21,14 +21,14 @@ export const KINETIQ_DOMAIN = {
 } as const;
 
 // EIP-712 types for AcceptTerms (ordered to match Kinetiq portal prompt)
-export const ACCEPT_TERMS_TYPES = {
+export const ACCEPT_TERMS_TYPES: Record<string, TypedDataField[]> = {
   AcceptTerms: [
     { name: "hyperliquidChain", type: "string" },
     { name: "message", type: "string" },
     { name: "cid", type: "string" },
     { name: "time", type: "uint256" },
   ],
-} as const;
+};
 
 export const TERMS_MESSAGE = "I acknowledge and agree to the Terms of Use at https://kinetiq-foundation.org/terms.";
 export const TERMS_CID = "bafkreiheqihimggxn2kuh6zugih3fxwxgrshfwvvjxsc3cizjwbzmtxrfq";
