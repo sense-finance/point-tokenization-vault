@@ -20,6 +20,7 @@ const {
   KV_REST_API_TOKEN: kvToken,
   HYPERBEAT_DISTRIBUTION_TIMESTAMP,
   HYPERBEAT_SIGNED_AT_MS,
+  HYPERBEAT_BATCH_SIZE,
 } = process.env;
 
 if (!kvUrl || !kvToken) {
@@ -94,7 +95,9 @@ function buildMessage(address: string, timestampMs: number) {
 
 function writeBatch(
   timestamp: string,
-  transactions: { to: string; value: string; data: string }[]
+  transactions: { to: string; value: string; data: string }[],
+  part: number,
+  totalParts: number
 ) {
   const batch = TxBuilder.batch(HYPEREVM_ADMIN_SAFE, transactions, {
     chainId: 999,
@@ -107,7 +110,8 @@ function writeBatch(
   );
   fs.mkdirSync(dir, { recursive: true });
   const sanitizedTs = timestamp.replace(/[:.]/g, "-");
-  const baseName = `HyperbeatS1Registration_${sanitizedTs}`;
+  const suffix = totalParts > 1 ? `_part${part + 1}-of-${totalParts}` : "";
+  const baseName = `HyperbeatS1Registration_${sanitizedTs}${suffix}`;
   const file = path.join(dir, `${baseName}.json`);
   fs.writeFileSync(file, JSON.stringify(batch, null, 2));
   return { file, baseName, dir };
@@ -120,8 +124,11 @@ function writeSummary(options: {
   batchFile: string;
   baseName: string;
   dir: string;
+  part: number;
+  totalParts: number;
 }) {
-  const { timestamp, signTimestamp, wallets, batchFile, baseName, dir } = options;
+  const { timestamp, signTimestamp, wallets, batchFile, baseName, dir, part, totalParts } =
+    options;
 
   const messageExample = wallets[0]
     ? {
@@ -138,6 +145,8 @@ function writeSummary(options: {
     signTimestampIso: new Date(signTimestamp).toISOString(),
     pointsId: POINTS_ID_HYPERBEAT_S1,
     messageExample,
+    batchPart: part + 1,
+    batchParts: totalParts,
     files: {
       batch: path.basename(batchFile),
     },
@@ -249,19 +258,40 @@ async function main() {
     console.log(`${address}: ${balance} Hyperbeat points`);
   }
 
-  const { file: batchFile, baseName, dir } = writeBatch(timestamp, transactions);
-  const summaryFile = writeSummary({
-    timestamp,
-    signTimestamp,
-    wallets: walletSummaries,
-    batchFile,
-    baseName,
-    dir,
+  const batchSize = HYPERBEAT_BATCH_SIZE ? Number(HYPERBEAT_BATCH_SIZE) : 75;
+  if (Number.isNaN(batchSize) || batchSize <= 0) {
+    throw new Error(`Invalid HYPERBEAT_BATCH_SIZE: ${HYPERBEAT_BATCH_SIZE}`);
+  }
+
+  const parts: { txs: typeof transactions; wallets: WalletSummary[] }[] = [];
+  for (let i = 0; i < transactions.length; i += batchSize) {
+    parts.push({
+      txs: transactions.slice(i, i + batchSize),
+      wallets: walletSummaries.slice(i, i + batchSize),
+    });
+  }
+
+  console.log(`Splitting into ${parts.length} batches of up to ${batchSize} txs each`);
+
+  parts.forEach((part, idx) => {
+    const { file: batchFile, baseName, dir } = writeBatch(timestamp, part.txs, idx, parts.length);
+    const summaryFile = writeSummary({
+      timestamp,
+      signTimestamp,
+      wallets: part.wallets,
+      batchFile,
+      baseName,
+      dir,
+      part: idx,
+      totalParts: parts.length,
+    });
+
+    console.log(`\nBatch ${idx + 1}/${parts.length} written to ${batchFile}`);
+    console.log(`Summary written to ${summaryFile}`);
+    console.log(`Transactions in batch: ${part.txs.length}`);
   });
 
-  console.log(`\nSafe batch written to ${batchFile}`);
-  console.log(`Summary written to ${summaryFile}`);
-  console.log(`Total transactions: ${transactions.length}`);
+  console.log(`\nTotal transactions: ${transactions.length}`);
   console.log(`Signature timestamp: ${new Date(signTimestamp).toISOString()}`);
 }
 

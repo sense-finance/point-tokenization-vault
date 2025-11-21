@@ -1,0 +1,769 @@
+{
+  "timestamp": "2025-10-30T12:01:33.494Z",
+  "signTimestamp": 1763692130713,
+  "signTimestampIso": "2025-11-21T02:28:50.713Z",
+  "pointsId": "0x1652756d70656c2050743a204879707262656174205331087048424541542d31",
+  "messageExample": {
+    "address": "0x92696A7D81930f65bdE7F0F4E557c9820cFF7dD8",
+    "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x92696A7D81930f65bdE7F0F4E557c9820cFF7dD8\nTimestamp: 2025-11-21T02:28:50.713Z",
+    "timestamp": "2025-11-21T02:28:50.713Z",
+    "hash": "0x1e723c33a56c682c4419012ba4cebc3e35445927f3a1c60a540624f784a71847"
+  },
+  "batchPart": 4,
+  "batchParts": 6,
+  "files": {
+    "batch": "HyperbeatS1Registration_2025-10-30T12-01-33-494Z_part4-of-6.json"
+  },
+  "wallets": [
+    {
+      "address": "0x92696A7D81930f65bdE7F0F4E557c9820cFF7dD8",
+      "hyperbeatPoints": "1424070000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x92696A7D81930f65bdE7F0F4E557c9820cFF7dD8\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x1e723c33a56c682c4419012ba4cebc3e35445927f3a1c60a540624f784a71847",
+      "batchIndex": 225,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x92448c88482FAfD50F73855037F23e919AcDe2e8",
+      "hyperbeatPoints": "18248388000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x92448c88482FAfD50F73855037F23e919AcDe2e8\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x0b60318489e40cc4707e246602d185e38e19d5e10ccec8bf1f46038fe89a725b",
+      "batchIndex": 226,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x91AF26d75c4d9Ff042187406A7E94EeE7d1ee544",
+      "hyperbeatPoints": "6027693680000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x91AF26d75c4d9Ff042187406A7E94EeE7d1ee544\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x2cac11ff4f65d3b88823fb51282223d974cf06a3b9596ffc56dd1280a2f01cb9",
+      "batchIndex": 227,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x948B0F8e7625868fF897dDf56058a6E592d0eB89",
+      "hyperbeatPoints": "468326270000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x948B0F8e7625868fF897dDf56058a6E592d0eB89\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xf9d635184692b9036139d073d0ebc2215faec0a6690f2d40750eb591af17578f",
+      "batchIndex": 228,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x93E6fDF1cA74b05D47E967b09a3e5f40dD19c15f",
+      "hyperbeatPoints": "2134774525210000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x93E6fDF1cA74b05D47E967b09a3e5f40dD19c15f\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xa3ab605b93aaa6349bf850430afb34302fc0ba438b9338601a0dfce77d266a72",
+      "batchIndex": 229,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x944B64a4574B99822C23b76dD664EBF8DB128a21",
+      "hyperbeatPoints": "3388590000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x944B64a4574B99822C23b76dD664EBF8DB128a21\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xfd4a7ba3e9c24ffb3f0b5ac763101e8cbee2218136173418897d18d7018c342f",
+      "batchIndex": 230,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x96a13abAa354A8f17B0e0de58F68787a9Fdb0D98",
+      "hyperbeatPoints": "321823800000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x96a13abAa354A8f17B0e0de58F68787a9Fdb0D98\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x4da61273658e6a58f6e8c4096533b8e965671cc973e1c49203fc851e3ce19cd7",
+      "batchIndex": 231,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x964E839c4aA0630eAD4189A62C45b727cF34b0Ae",
+      "hyperbeatPoints": "10449392100000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x964E839c4aA0630eAD4189A62C45b727cF34b0Ae\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x031da4c37af65a1db9d48b912ae4672cf131f8e8b4be499d0f0157c70bcf2138",
+      "batchIndex": 232,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x95C70b9D11B25FaDED18A081a79E224A9605CDA0",
+      "hyperbeatPoints": "31136727000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x95C70b9D11B25FaDED18A081a79E224A9605CDA0\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x71b4a419591f9e71116b362d517668973095d0fd6b69d8a845d08d37bc63c9d4",
+      "batchIndex": 233,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x98da51e0c16Cab5C919EFD95688d415B8C8fD052",
+      "hyperbeatPoints": "3651660000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x98da51e0c16Cab5C919EFD95688d415B8C8fD052\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xc6fd362f785cf03f6f9a7666a6493fb17bd42b88d6323a1130efd9878911fd35",
+      "batchIndex": 234,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x974881baeF3ef73F127db68A06cEa5928c921066",
+      "hyperbeatPoints": "325621080270000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x974881baeF3ef73F127db68A06cEa5928c921066\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x7f693f28ef575182fbe3a87c402889b99ffa2cedc07e11f03352d311a3e4b8c7",
+      "batchIndex": 235,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9960e183A153E30672B2CD5C1134E754f523a2Af",
+      "hyperbeatPoints": "4620575270000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9960e183A153E30672B2CD5C1134E754f523a2Af\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x762acea6d0c06707c6eb69f0333fe408e6ebd5b94b6eea903f492eb9964c1f66",
+      "batchIndex": 236,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x999290f9C9f58BC078220696792d6427BebEdb92",
+      "hyperbeatPoints": "2280837370000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x999290f9C9f58BC078220696792d6427BebEdb92\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x2be2eccd335eac4cb2ba94aeccd8a133068c4aedd7a44fb789609121b00f77e5",
+      "batchIndex": 237,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x99737258B45CeDC6A34b30e1c6F4c25fae964b82",
+      "hyperbeatPoints": "1137678476190000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x99737258B45CeDC6A34b30e1c6F4c25fae964b82\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x6477e89c9f1a798911bed1ee2169bc79b430d22999b19a7c54047a09665b992f",
+      "batchIndex": 238,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x99E1D1F131AD5018E32067a81c5A269429C06523",
+      "hyperbeatPoints": "1703585818730000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x99E1D1F131AD5018E32067a81c5A269429C06523\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x741e332deb3ae293ed512fdd01c630ebcf14694097fd803551c36c65599ddba1",
+      "batchIndex": 239,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9E1Ee1Fa580334fF063A79B9c3331e0fa96dbd7d",
+      "hyperbeatPoints": "3712527070000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9E1Ee1Fa580334fF063A79B9c3331e0fa96dbd7d\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x5e84fb69ba377d3b27602fead83df172f14047a3dce2f08e6fa474b125d7237f",
+      "batchIndex": 240,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9E73142D57776b8B45Dfb54618b98AD7Beaa930B",
+      "hyperbeatPoints": "271717971620000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9E73142D57776b8B45Dfb54618b98AD7Beaa930B\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xe644a6451f007942a65813c50d698db6b54b6c3dc7384f3ac144546a2c5c3f80",
+      "batchIndex": 241,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9A3580a7D944c69E8fB33685C1AE8C6c8007F40D",
+      "hyperbeatPoints": "1501516000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9A3580a7D944c69E8fB33685C1AE8C6c8007F40D\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x91a2018b4f85249c7aeb4d25f4503910e4a962a557cac14827cc190e8ba11e52",
+      "batchIndex": 242,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9e0EA19f67ccF26d345653695cf444936e27C278",
+      "hyperbeatPoints": "53825508750000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9e0EA19f67ccF26d345653695cf444936e27C278\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xb054b474dcfd57179e799c34f2c8cb220789fc80b176109dd0fd6597c262a149",
+      "batchIndex": 243,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9fa177ABeBa953762932fF524506f94ff4B17E62",
+      "hyperbeatPoints": "37816799230000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9fa177ABeBa953762932fF524506f94ff4B17E62\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xa1d3a2ef08aad200dbd742303806e91ada3109d1d8d0f4ce28ddb2d9652ebc49",
+      "batchIndex": 244,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0x9f5Dc62D7694293BA467EA36D585Ec7D0b6877f9",
+      "hyperbeatPoints": "91850000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0x9f5Dc62D7694293BA467EA36D585Ec7D0b6877f9\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x294f58e631235ea565dcf4b538fffe4a3bd9b9e28bdd7c748f6505433badace5",
+      "batchIndex": 245,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xA2C0e56FeBe3F54EFbD9303033f04285b4f85Fa2",
+      "hyperbeatPoints": "505450520000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xA2C0e56FeBe3F54EFbD9303033f04285b4f85Fa2\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xf13293464d744421d8cb7a7e0e2bdf4e435e0c417a91d3770bcd09c68323efac",
+      "batchIndex": 246,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa255792bFCEcb8789EE199Eb6e223215fd4f4E59",
+      "hyperbeatPoints": "37060283930000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa255792bFCEcb8789EE199Eb6e223215fd4f4E59\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x4a5046b398d1677f7bdbe2c265f1e789276d18ad6e1dcde9a1acb0c36dead34b",
+      "batchIndex": 247,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa158cb459a6711fe66A7Aa7AF49871820d06EA97",
+      "hyperbeatPoints": "1179914380000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa158cb459a6711fe66A7Aa7AF49871820d06EA97\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x6fcf65833ab65e8e39dc779b71a66b38841f1548a993bb676f30b96f829ed66f",
+      "batchIndex": 248,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa52F9add8Ae9239C48f0526B539BdEbd8B1A18e4",
+      "hyperbeatPoints": "5600000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa52F9add8Ae9239C48f0526B539BdEbd8B1A18e4\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x0398b77b6a7364b7c89a085a1b50fae97d2f9fe5359da4af16b9039159bc2d7c",
+      "batchIndex": 249,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xA58F0f9be7834e03dFBb9a1789Caea5af11faEc8",
+      "hyperbeatPoints": "1796105450000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xA58F0f9be7834e03dFBb9a1789Caea5af11faEc8\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x8d335ba5378c943670e717e0613122a2c6b02f653a899d8c383186423b9bfde8",
+      "batchIndex": 250,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa323fB19671C88c14BfB7a2A2e44DF88c4b727eA",
+      "hyperbeatPoints": "19782767410000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa323fB19671C88c14BfB7a2A2e44DF88c4b727eA\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x999c3e9421f9a24512d583e4af68649be47587d347b66fd7d8bc03e13b7d7e37",
+      "batchIndex": 251,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa5657b13Bd9488184EABBF5868ca3EB29f921c83",
+      "hyperbeatPoints": "39728614920000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa5657b13Bd9488184EABBF5868ca3EB29f921c83\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x36489896f95dda5b9e1f44d3a2d8af460942496aa5d019efafac0c73257d81e0",
+      "batchIndex": 252,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa54eec0C7fA245DC41946456863A835c6cd5FE84",
+      "hyperbeatPoints": "2902794250000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa54eec0C7fA245DC41946456863A835c6cd5FE84\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x7716fe4169922b80effe186b450e29320327b32136ea13bfa85d21e0420f8809",
+      "batchIndex": 253,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xA675097385c4276a196D611B15188C847a6B456C",
+      "hyperbeatPoints": "44218000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xA675097385c4276a196D611B15188C847a6B456C\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x057b2793a3e06d34e73967aa10fd65f5524c1744f3a5491faf35526e2d1e8227",
+      "batchIndex": 254,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xA7D97a76d12cC1EE25d33046097ED1F96733D388",
+      "hyperbeatPoints": "290744370000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xA7D97a76d12cC1EE25d33046097ED1F96733D388\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x94d9877b0c0583dd457ac1172660457251a46949c5ac6f0e80c91f5819fab168",
+      "batchIndex": 255,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa83643f5e4247e53ad264dbEB13384c0984B57C0",
+      "hyperbeatPoints": "44660000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa83643f5e4247e53ad264dbEB13384c0984B57C0\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x7bff2cee74fb591bbaa19764a7af13691d96ad44b116a91e6fcf0f88a1e8ace0",
+      "batchIndex": 256,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa77D16cd593bE9563d51CFe6cAcFe10d8ac8E597",
+      "hyperbeatPoints": "187496466240000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa77D16cd593bE9563d51CFe6cAcFe10d8ac8E597\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x6564aa1c51af397679393a35f87831aa558e5b6a29e0121a8f8ac736799f73d4",
+      "batchIndex": 257,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xA86466AB2A57134C4de52d893a6b7B3E87d11c00",
+      "hyperbeatPoints": "57612340000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xA86466AB2A57134C4de52d893a6b7B3E87d11c00\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xf8460b519e3fc796c81f81eb4d8af737958c3ba0c1430a50752dadf3df95a029",
+      "batchIndex": 258,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xA8A6BD1E962FA029806C40Cb1Ba3DfA1b25424C2",
+      "hyperbeatPoints": "44827646000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xA8A6BD1E962FA029806C40Cb1Ba3DfA1b25424C2\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x8424dd490e23a8b0bef1ae32f08ec239b0a88b6c913fd19b2b894efcda9c82f8",
+      "batchIndex": 259,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xAab14228b26131787aa584Cae0D81227c633fCCD",
+      "hyperbeatPoints": "2008410000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xAab14228b26131787aa584Cae0D81227c633fCCD\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x7fdb6fbfe14b46fa02e100afc831b879f7f40e7ba4ba982d5deea1e1f79aefe2",
+      "batchIndex": 260,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa97924bd0E21D53d2C369C340FAcA852486883C6",
+      "hyperbeatPoints": "88516751130000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa97924bd0E21D53d2C369C340FAcA852486883C6\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x8d1125fa9c16112795ce0171c7d8a9c8aa23d1a3ee77ae65aa69c16d620a05d4",
+      "batchIndex": 261,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xa9cfbD41c167ECe6b4302986DfA74c4528f7eDFD",
+      "hyperbeatPoints": "3900728400000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xa9cfbD41c167ECe6b4302986DfA74c4528f7eDFD\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x10b2c43617996e0037f4bd635d7bd499f63c16543ab1d07d5154799571ec02e0",
+      "batchIndex": 262,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xacd20f133c2D1eEe6FF2b18a8e242eba9c557c8b",
+      "hyperbeatPoints": "18289617470000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xacd20f133c2D1eEe6FF2b18a8e242eba9c557c8b\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x194bfffd92e36c11732ff73014a95c9312b216ee143f51a823e4505404041e27",
+      "batchIndex": 263,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xacEA43B1eF5f9B8ed7f29a6446A695F5321A386F",
+      "hyperbeatPoints": "115741724780000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xacEA43B1eF5f9B8ed7f29a6446A695F5321A386F\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x31af38a55e98ee79c1c80c4c4ecd11ff3435a0f1c813e03c8dd738934065ca9d",
+      "batchIndex": 264,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xaF515f8e2488315c0f960dB0634A7633A98DAdb9",
+      "hyperbeatPoints": "9937399540010000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xaF515f8e2488315c0f960dB0634A7633A98DAdb9\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x17cee7e66ba5ee62d5ccfd3e059fc9204faaea7f19d67bdf9d01857026a33dcb",
+      "batchIndex": 265,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xAfB7Df4FC4f89a0E4b182E18CAcDc8513BFAB0A0",
+      "hyperbeatPoints": "27125548790000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xAfB7Df4FC4f89a0E4b182E18CAcDc8513BFAB0A0\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x1ef6164405be48af9f7b334d87f25812d9872dc6e79a6135caf3e9520b6bd0f3",
+      "batchIndex": 266,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xafECA03AE8203f99A7B0bF7670EB545853e2b5a7",
+      "hyperbeatPoints": "32767786970000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xafECA03AE8203f99A7B0bF7670EB545853e2b5a7\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x7123a88b85874f654f09509ee3a03dfc772baf9d527a68df99a3633cfd5ef8c5",
+      "batchIndex": 267,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xaF352d6978e7085e1A6CC63ABbf29cA341962261",
+      "hyperbeatPoints": "87424990000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xaF352d6978e7085e1A6CC63ABbf29cA341962261\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xdd9415ddfa002833248c5cbea595434135c0b615bf2a3dc97e456f079c8b2ede",
+      "batchIndex": 268,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xaF0F2bac0Ad5A55931706095F2BE58f365995B83",
+      "hyperbeatPoints": "4290959000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xaF0F2bac0Ad5A55931706095F2BE58f365995B83\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xe8d86ed1a63091f8529ebab68248c8052b39bfc59704a307e80692eb3d5af435",
+      "batchIndex": 269,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb16B8d44D1C439FA56D474888D8c32afB07d9B30",
+      "hyperbeatPoints": "22868410490000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb16B8d44D1C439FA56D474888D8c32afB07d9B30\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xc2e868eb8e868a3e39f761da6101c34ae982ddbf780d0dadb6b1e2a321afcfb3",
+      "batchIndex": 270,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb19C8FDf85c2d8734Ad52ab4Efee83825075Eb28",
+      "hyperbeatPoints": "299905709000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb19C8FDf85c2d8734Ad52ab4Efee83825075Eb28\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x9c0ad0e67c24c92ba05fe0ba6b759ec92888771fbc7f9b402b6f57e31fc2d519",
+      "batchIndex": 271,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xB1CfeBd87789D4c4ffB7E6D667304c12c19686d4",
+      "hyperbeatPoints": "4057561088370000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xB1CfeBd87789D4c4ffB7E6D667304c12c19686d4\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xa957a52f3f73b18f0061e27184744edd13d61934b8539501816316da48253d90",
+      "batchIndex": 272,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb36178377c0631121e12624957196907a8210B33",
+      "hyperbeatPoints": "12926576770000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb36178377c0631121e12624957196907a8210B33\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x0c4f2175c464d553c99e3ed5d64a511f3f436ba54b80d5b77fe8735346cc58f2",
+      "batchIndex": 273,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb4d7786147d521919e5923b4D21e188626Fd41fE",
+      "hyperbeatPoints": "69694879722320000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb4d7786147d521919e5923b4D21e188626Fd41fE\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xc99baff793777f1be8e6fd42d74a94ac600693a5e952fc02512fb4f2f2e0411d",
+      "batchIndex": 274,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb76cE5f1E82Df40Ac869F8A65136563Ff91785b0",
+      "hyperbeatPoints": "223816141540000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb76cE5f1E82Df40Ac869F8A65136563Ff91785b0\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xdb4ced55d7cb03014f3cdfadcf7d1b2e1ee1eb6996b397f7f66a819aeea897e2",
+      "batchIndex": 275,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb8306e465491b165B6Fe9e0D61E146D9C686dC2B",
+      "hyperbeatPoints": "73392949610000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb8306e465491b165B6Fe9e0D61E146D9C686dC2B\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x94773388514ab88e1ebf827c6072d1e036f2e385f2c6a7069f7f583ccece3e7c",
+      "batchIndex": 276,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xb81Eb60fA132535346eA93D46916A52a8c3dd475",
+      "hyperbeatPoints": "197914890036060000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xb81Eb60fA132535346eA93D46916A52a8c3dd475\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xccfd4792c257a6f3543eb98a28ff9bbfb7b15fae7f8097737b0aa9fcff403fb6",
+      "batchIndex": 277,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xB8AdD161553eE6c046C1d99b2E5b3d8262C12c1f",
+      "hyperbeatPoints": "7557532579230000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xB8AdD161553eE6c046C1d99b2E5b3d8262C12c1f\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xc541b11486f5bec00883ce38dcb27388ec0d164dbab467f94bfc955cae633d5a",
+      "batchIndex": 278,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBA37bAc41878BC74fA9afd319a33b598E27F9750",
+      "hyperbeatPoints": "1382864000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBA37bAc41878BC74fA9afd319a33b598E27F9750\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x142f687fdbe0295ba16e63fad9fecd491523bf944e0541b292b73fe3184d648f",
+      "batchIndex": 279,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBa38150B6D0b795a3D2625B853C3A6b5980Df98d",
+      "hyperbeatPoints": "26490437180000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBa38150B6D0b795a3D2625B853C3A6b5980Df98d\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xddbafed7eb973110ce7afcf7e45426776247e526c1c8fcad45412efb0eabdebd",
+      "batchIndex": 280,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBBA2666dB85f5af8e94Bba117095a25e07b55883",
+      "hyperbeatPoints": "1284267794100000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBBA2666dB85f5af8e94Bba117095a25e07b55883\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xefd9d99f84e9b97512cd29da9904860c757b3b67f62349d2a8db249a89353255",
+      "batchIndex": 281,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xbb25f533b178d2CdFE3ef980A9ca275b5327FF9e",
+      "hyperbeatPoints": "8254361810000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xbb25f533b178d2CdFE3ef980A9ca275b5327FF9e\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x4efbbd15e42ca6fae84ea7340b0e1343578c2fe9328481b34c1858d2ea6e44d0",
+      "batchIndex": 282,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBb79230AA3895FEE9CCA03498550315470D38570",
+      "hyperbeatPoints": "5205568540000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBb79230AA3895FEE9CCA03498550315470D38570\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x4c035294123a67da0932365d89721468e97376942321fa76f86978f74ac409ab",
+      "batchIndex": 283,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xbB29E3DD2e1254b51ac80c27ADa71899e5dA942f",
+      "hyperbeatPoints": "2162875470000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xbB29E3DD2e1254b51ac80c27ADa71899e5dA942f\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xabdd73f58988538000afa2c47d68b477e5616b1c812b5c06e1e2af056702f5eb",
+      "batchIndex": 284,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xbBeEDf5216D8d5445F8BB28B8249D7aDF0052472",
+      "hyperbeatPoints": "11328549900000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xbBeEDf5216D8d5445F8BB28B8249D7aDF0052472\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x9bdbf4a89b2010a8dfe9f7b79387e336dabe0635ce1708158627964fcd99e7f6",
+      "batchIndex": 285,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBC9FAFE5d7223662c3d5A5B8038B45ACf9AA7E70",
+      "hyperbeatPoints": "240242802250000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBC9FAFE5d7223662c3d5A5B8038B45ACf9AA7E70\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x702b2b90123c9a2947d2cc3a4535f1226ca07e9db4d5fa90e888773128e814b8",
+      "batchIndex": 286,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xbD427Dba38B5CEc8EBe99f48B9f430f068A23D7C",
+      "hyperbeatPoints": "4191461000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xbD427Dba38B5CEc8EBe99f48B9f430f068A23D7C\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x9ce2dfc0391c7b7ba69993949729e09e194b367609c543614f0bb66d152cd837",
+      "batchIndex": 287,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBe4A84C8110aF11700e20Ee57300a58302486d16",
+      "hyperbeatPoints": "15225759210000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBe4A84C8110aF11700e20Ee57300a58302486d16\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xd60031cdd4ddd750a3489fd7061f0e7aadc264d47428fa4b1d771f496c88bff3",
+      "batchIndex": 288,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xBf7f4Da53a37b2042DD0E6d5E73D4DAD6dCd4FD6",
+      "hyperbeatPoints": "117408626000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xBf7f4Da53a37b2042DD0E6d5E73D4DAD6dCd4FD6\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x51fccde871718806d4e6f07bd064b9bc56cec2eb304dcac08463955c206c20fe",
+      "batchIndex": 289,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xbfc40a1A840F1D92E0EF0d130707C3fB4B08c000",
+      "hyperbeatPoints": "2971817681000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xbfc40a1A840F1D92E0EF0d130707C3fB4B08c000\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x642d79e071572372a26031670f15742a2ea0fe2b892dff4b02a39c710a1895c4",
+      "batchIndex": 290,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xc130f33Cc91C0741576B76e1fc07C4712Db48576",
+      "hyperbeatPoints": "24127354599880000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xc130f33Cc91C0741576B76e1fc07C4712Db48576\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x173cfaf605e9bf94781a7539bac8cc00cda6af2561dc5bcfcbb45c8a00f32545",
+      "batchIndex": 291,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xc1336492b7b0c8210Ba320643fDAacd640f37c88",
+      "hyperbeatPoints": "248792632070000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xc1336492b7b0c8210Ba320643fDAacd640f37c88\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x3e554afea7b393a5f7ad5926e2c8801789370e8f63677b68fd3ce9bfa09d46d9",
+      "batchIndex": 292,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xbFBE2Eeabb8812Eaf1F6ecD5c8B2F7FfB5913591",
+      "hyperbeatPoints": "34721441550000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xbFBE2Eeabb8812Eaf1F6ecD5c8B2F7FfB5913591\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x03554d1104284c3c5b1b374d2a07cc65fee5d752c46527f2ed8c1e37b44fd39c",
+      "batchIndex": 293,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xc192363714ecB1204EfB679f123BEf69cB955241",
+      "hyperbeatPoints": "188365776030000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xc192363714ecB1204EfB679f123BEf69cB955241\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xd7d40db3ca882e59fecb3bca580928d8a28c5fcfaa1390980c543305bff7a41f",
+      "batchIndex": 294,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xC2b61E93B4E71614DAebEad9610360D26c91Ca85",
+      "hyperbeatPoints": "36768971000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xC2b61E93B4E71614DAebEad9610360D26c91Ca85\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x8c2b81fe699975da9c25746b17a4e9b0cc7b0b9e8b47f04680fceeff4e3d0de1",
+      "batchIndex": 295,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xC50d24e88b1e9Ea1fa3A8e23d888D121209228c7",
+      "hyperbeatPoints": "13178377630000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xC50d24e88b1e9Ea1fa3A8e23d888D121209228c7\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x8b36ecbc9599252e1d89cc7dab1b18b693fa1b430ef5f8d5d39e9a7b100234c3",
+      "batchIndex": 296,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xC39C461Ef26b5c50918909642db94F9284bc56d8",
+      "hyperbeatPoints": "449021014000000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xC39C461Ef26b5c50918909642db94F9284bc56d8\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xd6956c3968d76744f060fa22c1c912ab35077b1091f7ca968cbcc0eb217d4634",
+      "batchIndex": 297,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xC4523c9DFaCD29b3DFA0ce33dF62952A10f71C49",
+      "hyperbeatPoints": "674718130000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xC4523c9DFaCD29b3DFA0ce33dF62952A10f71C49\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0xbd0f5c75ec071671c36e9a648a616bf74826f6c0641ebed31c1abbb904bed5e1",
+      "batchIndex": 298,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    },
+    {
+      "address": "0xC4FBF9Aef3ecbF2a6C8D6775E0C567B040864338",
+      "hyperbeatPoints": "39120048890000000000",
+      "message": "I accept the Hyperbeat Foundation Terms of Use\n\nAddress: 0xC4FBF9Aef3ecbF2a6C8D6775E0C567B040864338\nTimestamp: 2025-11-21T02:28:50.713Z",
+      "timestamp": "2025-11-21T02:28:50.713Z",
+      "hash": "0x8f51dec24596cebb2d604ba245ec899fc70a742857326617c8d750c6efa43015",
+      "batchIndex": 299,
+      "signedInTransaction": null,
+      "signatureEventLogIndex": null
+    }
+  ]
+}
